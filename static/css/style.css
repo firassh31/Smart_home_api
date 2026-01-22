@@ -1,0 +1,112 @@
+body {
+    font-family: sans-serif;
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 1rem;
+}
+
+.room-container {
+    background-color: #f9f9f9;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.room-container h3 {
+    margin-top: 0;
+    color: #333;
+    border-bottom: 2px solid #007bff;
+    display: inline-block;
+    padding-bottom: 5px;
+}
+
+.device-card {
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+}
+
+input,
+select {
+    padding: 8px;
+    margin-right: 5px;
+}
+
+button {
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+/* Modal Styling */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 300px;
+    text-align: center;
+    border-radius: 8px;
+}
+
+.status-on {
+    color: green;
+    font-weight: bold;
+}
+
+.status-off {
+    color: red;
+    font-weight: bold;
+}
+
+.delete-btn {
+    background-color: grey;
+    color: white;
+    border: none;
+    margin-left: 5px;
+}
+
+.toggle-btn {
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+/* Green when device is ON */
+.btn-on {
+    background-color: #28a745;
+    /* Green */
+}
+
+.btn-on:hover {
+    background-color: #218838;
+}
+
+/*  Red when device is OFF */
+.btn-off {
+    background-color: #dc0d0dfe;
+    /* Grey */
+}
+
+.btn-off:hover {
+    background-color: #c53434;
+}
