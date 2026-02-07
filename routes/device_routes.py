@@ -73,14 +73,16 @@ def add_device():
     new_device = db.add_device(name, room)
     return jsonify(new_device), 201
 
-@device_bp.route('/<int:device_id>', methods=['DELETE'])
+@device_bp.route('/<device_id>', methods=['DELETE'])
 def delete_device(device_id):
+    device_id = device_id.strip()
+    print(f"DEBUG: Server received clean ID: '{device_id}'") # לוג מעודכן
     success = db.delete_device(device_id)
     if success:
         return jsonify({"message": "Deleted"}), 200
     return jsonify({"error": "Device not found"}), 404
 
-@device_bp.route('/<int:device_id>/status', methods=['PUT'])
+@device_bp.route('/<device_id>/status', methods=['PUT'])
 def update_status(device_id):
     data = request.get_json()
     new_status = data.get('status')

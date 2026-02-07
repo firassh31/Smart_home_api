@@ -1,4 +1,4 @@
-const API_URL = '/devices/';
+const API_URL = 'http://localhost:3000/devices/';
 
 function loadDevices() {
     fetch(API_URL)
@@ -38,9 +38,9 @@ function loadDevices() {
                     <strong>${device.name}</strong> 
                     </div>
                     <div class="device-actions">
-                    <button class="toggle-btn ${btnClass}" onclick="toggleDevice(${device.id}, '${device.status}')">${btnText}</button>
+                    <button class="toggle-btn ${btnClass}" onclick="toggleDevice('${device.id}', '${device.status}')">${btnText}</button>
         
-                    <button class="delete-btn" onclick="openDeleteModal(${device.id})">Delete 🗑️</button>
+                    <button class="delete-btn" onclick="openDeleteModal('${device.id}')">Delete 🗑️</button>
                     </div>
                 `;
 
