@@ -30,10 +30,11 @@ Clone the repository and navigate into the project folder:
 ```bash
 git clone <your-repository-url>
 cd Smart_home_api
-
+```
 ### 3. Environment Variables (Important!)
 
 # Windows
+``` bash
 python -m venv venv
 venv\Scripts\activate
 
@@ -48,15 +49,15 @@ pip install -r requirements.txt
 For security, database credentials are not tracked in version control. You must create a .env file in the root directory of the project and add your MongoDB connection string:
 
 MONGO_URI="mongodb+srv://<username>:<password>@<your-cluster-address>/?retryWrites=true&w=majority"
-
+```
 ### 4. Start the Server
 
 Run the Flask application:
 
-Bash
+``` Bash
 python app.py
 The server will start running on http://127.0.0.1:5000. You can now open your frontend index.html file in a browser to interact with the API!
-
+```
 
 ## 📡 API Endpoints
 
