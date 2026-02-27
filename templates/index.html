@@ -7,27 +7,21 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 
+<header class="main-header">
+    <div class="header-content">
+        <h1>🏠 Smart Home</h1>
+        <div class="status-badge">
+            <span id="active-count">0</span> Active Devices
+        </div>
+    </div>
+</header>
+
 <body>
-
-    <h1>🏠 Smart Home Dashboard</h1>
-
-    <div class="input-group">
-        <input type="text" id="device-name" placeholder="Device Name (e.g. Lamp)">
-        <select id="device-room">
-            <option value="Living Room">Living Room</option>
-            <option value="Kitchen">Kitchen</option>
-            <option value="Bedroom">Bedroom</option>
-            <option value="Bathroom">Bathroom</option>
-        </select>
-        <button onclick="addDevice()">Add Device</button>
-    </div>
-
-    <hr>
-
-    <h3>Your Devices</h3>
-    <div id="deviceList">
-        <p><em>No devices found yet...</em></p>
-    </div>
+    <main class="content-wrapper">
+        <h3>Your Devices</h3>
+        <div id="deviceList">
+        </div>
+    </main>
 
     <div id="deleteModal" class="modal">
         <div class="modal-content">
@@ -38,6 +32,22 @@
         </div>
     </div>
 
+    <button class="fab-btn" onclick="openAddModal()">+</button>
+
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <h3>Add New Device</h3>
+
+            <input type="text" id="device-name" placeholder="Device Name (e.g. Lamp)" autocomplete="off">
+            <input type="text" id="device-room" placeholder="Room Name (e.g. Bedroom)" autocomplete="off">
+
+            <div class="modal-actions">
+                <button class="secondary-btn" onclick="closeAddModal()">Cancel</button>
+                <button class="primary-btn" onclick="addDevice()">Save</button>
+            </div>
+        </div>
+    </div>
+    <div id="toast-container"></div>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 

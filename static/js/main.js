@@ -6,9 +6,16 @@ function loadDevices() {
         .then(devices => {
             const listDiv = document.getElementById('deviceList');
             listDiv.innerHTML = '';
+            const activeCount = devices.filter(d => d.status === 'on').length;
+            document.getElementById('active-count').textContent = activeCount;
 
             if (devices.length === 0) {
-                listDiv.innerHTML = '<p><em>No devices found.</em></p>';
+                listDiv.innerHTML = `
+            <div class="empty-state">
+            <div class="empty-icon">🏠</div>
+            <p>Your home is empty. Tap the <b>+</b> button to add your first device!</p>
+            </div>
+            `;
                 return;
             }
 
@@ -35,28 +42,29 @@ function loadDevices() {
 
                     item.innerHTML = `
                     <div class="device-info">
-                    <strong>${device.name}</strong> 
+                        <strong>${device.name}</strong> 
+                        <span class="room-label">📍 ${roomName}</span>
                     </div>
                     <div class="device-actions">
-                    <button class="toggle-btn ${btnClass}" onclick="toggleDevice('${device.id}', '${device.status}')">${btnText}</button>
-        
-                    <button class="delete-btn" onclick="openDeleteModal('${device.id}')">Delete 🗑️</button>
+                        <button class="toggle-btn ${btnClass}" onclick="toggleDevice('${device.id}', '${device.status}')">${btnText}</button>
+                        <button class="delete-btn" onclick="openDeleteModal('${device.id}')">🗑️</button>
                     </div>
-                `;
+                    `;
 
                     roomDiv.appendChild(item);
                 });
                 listDiv.appendChild(roomDiv);
             }
         })
-        .catch(error => console.error('Error:', error));
+        .catch(error => showToast('Error connecting to server', true));
 }
+
 
 function addDevice() {
     const nameInput = document.getElementById('device-name');
     const roomInput = document.getElementById('device-room');
 
-    if (nameInput.value) {
+    if (nameInput.value && roomInput.value) {
         fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -64,11 +72,14 @@ function addDevice() {
         }).then(response => {
             if (response.ok) {
                 nameInput.value = '';
-                loadDevices();
+                roomInput.value = '';
+                closeAddModal(); // Hides the popup
+                loadDevices();   // Refreshes the grid
+                showToast("Device added successfully!", false);
             }
         });
     } else {
-        alert("Please enter a device name");
+        showToast("Please enter both a device name and a room", true);
     }
 }
 
@@ -83,7 +94,9 @@ function toggleDevice(id, currentStatus) {
     });
 }
 
-// Modal Logic
+// --- Modal Logic ---
+
+// Delete Modal
 function openDeleteModal(id) {
     document.getElementById('deleteModal').style.display = 'block';
     document.getElementById('deleteIdField').value = id;
@@ -106,4 +119,28 @@ function confirmDelete() {
         });
 }
 
+// Add Device Modal
+function openAddModal() {
+    document.getElementById('addModal').style.display = 'block';
+}
+
+function closeAddModal() {
+    document.getElementById('addModal').style.display = 'none';
+}
+
+function showToast(message, isError = false) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+
+    // Assigns the 'error' class (Burnt Rust) or 'success' class (Moss Green)
+    toast.className = `toast ${isError ? 'error' : 'success'}`;
+    toast.textContent = message;
+
+    container.appendChild(toast);
+
+    // Physically removes the toast from the HTML after 3 seconds so they don't pile up invisibly
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
 window.onload = loadDevices;

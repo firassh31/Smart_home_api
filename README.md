@@ -17,6 +17,13 @@ It heavily leverages Object-Oriented Programming (OOP) principles and structural
 * **Database Indexing:** Implemented a B-tree index on the `room` field to drastically speed up sorting and data grouping at the database level.
 * **Resilience:** Added comprehensive `try...except` error handling to gracefully manage database timeouts or network drops without crashing the server.
 
+* **Frontend Evolution:** Developed a mobile-first, responsive dashboard using a modern "Warm Sand" and "Moss Green" aesthetic.
+
+* **UX Interactions:** Implemented a Floating Action Button (FAB) for device creation and custom "Toast Notifications" to replace native browser alerts.
+
+* **Live Status Tracking:** Added a sticky header with a real-time "Active Devices" counter and frosted-glass (backdrop-filter) effects.
+
+* **Architecture:** Refactored CSS into a Design Token system using CSS variables for scalable spacing, typography, and colors.
 ---
 
 ## ⚙️ How to Run the Project
