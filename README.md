@@ -32,9 +32,8 @@ git clone <your-repository-url>
 cd Smart_home_api
 ```
 ### 3. Environment Variables (Important!)
-
-# Windows
 ``` bash
+# Windows
 python -m venv venv
 venv\Scripts\activate
 
