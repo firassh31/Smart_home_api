@@ -5,25 +5,27 @@ A scalable, microservices-based Smart Home API built to manage and monitor IoT d
 It heavily leverages Object-Oriented Programming (OOP) principles and structural design patterns (Singleton, Observer) to maintain a clean, decoupled, and efficient codebase.
 
 ## 🏗️ Architecture & Tech Stack
-* **Backend:** Python 3, Flask
-* **Database:** MongoDB Atlas (Cloud NoSQL)
-* **Frontend:** Vanilla JavaScript, HTML, CSS
-* **Design Patterns:** Singleton (Database Connection), Observer (Device State Management)
+* **Backend:** Python, Flask.
+* **Database:** MongoDB Atlas.
+* **Frontend**: HTML5, CSS3 (Modern Design Tokens), JavaScript (ES6+).
+* **Design Patterns:** Singleton (Database Connection), Observer (Device State Management).
 * **Security:** `python-dotenv` for environment variable management, CORS policies configured for microservice communication.
 
 ## 🚀 Recent Updates & Optimizations
-* **Cloud Migration:** Transitioned from a local SQLite database to a fully managed MongoDB Atlas cluster.
 * **Query Optimization:** Replaced $O(N)$ collection scans with $O(1)$ `ObjectId` lookups for CRUD operations.
 * **Database Indexing:** Implemented a B-tree index on the `room` field to drastically speed up sorting and data grouping at the database level.
-* **Resilience:** Added comprehensive `try...except` error handling to gracefully manage database timeouts or network drops without crashing the server.
+* **Segmented Room Navigation**: Replaced bulky headers with a sleek, horizontal-scrolling "Pill" menu.
+* **Dynamic Tile Layout**: Redesigned device cards into perfect squares with automatic iconography (📺, 💡, ❄️) based on device names.
+* **Kebab Menu (Three Dots)**: Improved UI by moving secondary actions (Edit/Delete) into a scoped dropdown menu.
+* **Native App Optimization**: Added mobile-first behaviors, including touch-highlight removal and overscroll prevention for an "app-like" feel.
+* **Code Refactor**: Optimized both CSS and JS files for performance, using modern ES6+ standards and DRY principles.
 
-* **Frontend Evolution:** Developed a mobile-first, responsive dashboard using a modern "Warm Sand" and "Moss Green" aesthetic.
+## 🛠️ Features
+- **Real-time Filtering**: Instantly filter devices by room without page reloads.
+- **Interactive Toggles**: Modern, animated ON/OFF switches for all smart devices.
+- **Global Status Badge**: A sticky header showing the total count of active devices at a glance.
+- **Smart Auto-Icons**: Intelligent name-matching logic that assigns relevant emojis to devices automatically.
 
-* **UX Interactions:** Implemented a Floating Action Button (FAB) for device creation and custom "Toast Notifications" to replace native browser alerts.
-
-* **Live Status Tracking:** Added a sticky header with a real-time "Active Devices" counter and frosted-glass (backdrop-filter) effects.
-
-* **Architecture:** Refactored CSS into a Design Token system using CSS variables for scalable spacing, typography, and colors.
 ---
 
 ## ⚙️ How to Run the Project
