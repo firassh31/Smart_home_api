@@ -1,146 +1,156 @@
 const API_URL = 'http://127.0.0.1:5000/devices/';
+let activeRoom = 'All', devices = [];
 
-function loadDevices() {
-    fetch(API_URL)
-        .then(response => response.json())
-        .then(devices => {
-            const listDiv = document.getElementById('deviceList');
-            listDiv.innerHTML = '';
-            const activeCount = devices.filter(d => d.status === 'on').length;
-            document.getElementById('active-count').textContent = activeCount;
+// DOM Helpers (Saves time typing)
+const $ = id => document.getElementById(id);
+const $$ = selector => document.querySelectorAll(selector);
 
-            if (devices.length === 0) {
-                listDiv.innerHTML = `
-            <div class="empty-state">
-            <div class="empty-icon">🏠</div>
-            <p>Your home is empty. Tap the <b>+</b> button to add your first device!</p>
-            </div>
-            `;
-                return;
-            }
+// Auto-Icon Matcher using clean Regex
+const getDeviceIcon = name => {
+    const n = name.toLowerCase();
+    if (n.match(/tv|screen|television/)) return '📺';
+    if (n.match(/lamp|light|bulb/)) return '💡';
+    if (n.match(/ac|air|condition/)) return '❄️';
+    if (n.match(/music|speaker|audio/)) return '🎵';
+    if (n.match(/fan/)) return '🎐';
+    return '';
+};
 
-            const devicesByRoom = {};
-            devices.forEach(device => {
-                const roomName = device.room || 'Unassigned';
-                if (!devicesByRoom[roomName]) devicesByRoom[roomName] = [];
-                devicesByRoom[roomName].push(device);
-            });
-
-            for (const [roomName, roomDevices] of Object.entries(devicesByRoom)) {
-                const roomDiv = document.createElement('div');
-                roomDiv.className = 'room-container';
-
-                const title = document.createElement('h3');
-                title.textContent = roomName;
-                roomDiv.appendChild(title);
-
-                roomDevices.forEach(device => {
-                    const item = document.createElement('div');
-                    item.className = 'device-card';
-                    const btnClass = device.status === 'on' ? 'btn-on' : 'btn-off';
-                    const btnText = device.status === 'on' ? 'ON' : 'OFF';
-
-                    item.innerHTML = `
-                    <div class="device-info">
-                        <strong>${device.name}</strong> 
-                        <span class="room-label">📍 ${roomName}</span>
-                    </div>
-                    <div class="device-actions">
-                        <button class="toggle-btn ${btnClass}" onclick="toggleDevice('${device.id}', '${device.status}')">${btnText}</button>
-                        <button class="delete-btn" onclick="openDeleteModal('${device.id}')">🗑️</button>
-                    </div>
-                    `;
-
-                    roomDiv.appendChild(item);
-                });
-                listDiv.appendChild(roomDiv);
-            }
-        })
-        .catch(error => showToast('Error connecting to server', true));
-}
-
-
-function addDevice() {
-    const nameInput = document.getElementById('device-name');
-    const roomInput = document.getElementById('device-room');
-
-    if (nameInput.value && roomInput.value) {
-        fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: nameInput.value, room: roomInput.value })
-        }).then(response => {
-            if (response.ok) {
-                nameInput.value = '';
-                roomInput.value = '';
-                closeAddModal(); // Hides the popup
-                loadDevices();   // Refreshes the grid
-                showToast("Device added successfully!", false);
-            }
-        });
-    } else {
-        showToast("Please enter both a device name and a room", true);
+// --- 1. Fetch & Render ---
+const loadDevices = async () => {
+    try {
+        const res = await fetch(API_URL);
+        devices = await res.json();
+        renderUI();
+    } catch {
+        showToast('Error connecting to server', 'error');
     }
-}
+};
 
-function toggleDevice(id, currentStatus) {
-    const newStatus = currentStatus === 'on' ? 'off' : 'on';
-    fetch(API_URL + id + '/status', {
+const renderUI = () => {
+    // Render Navigation Pills
+    const rooms = ['All', ...new Set(devices.map(d => d.room || 'Unassigned'))];
+    $('room-nav').innerHTML = rooms.map(r =>
+        `<button class="room-pill ${r === activeRoom ? 'active' : ''}" onclick="activeRoom='${r}'; renderUI()">${r}</button>`
+    ).join('');
+
+    // Filter Devices & Update Active Badge
+    const filtered = activeRoom === 'All' ? devices : devices.filter(d => (d.room || 'Unassigned') === activeRoom);
+    $('active-count').textContent = filtered.filter(d => d.status === 'on').length;
+
+    // Handle Empty State
+    if (!filtered.length) {
+        $('deviceList').innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1;">
+                <div class="empty-icon">🏠</div>
+                <p>No devices found here.</p>
+            </div>`;
+        return;
+    }
+
+    // Render Device Grid
+    $('deviceList').innerHTML = filtered.map(d => {
+        const icon = getDeviceIcon(d.name);
+        return `
+        <div class="device-card">
+            <div class="device-card-menu">
+                <button class="device-card-menu-btn" onclick="toggleDeviceMenu('device-menu-${d.id}')">⋮</button>
+                <div id="device-menu-${d.id}" class="device-card-dropdown">
+                    <button onclick="editDevice('${d.id}')">✏️ Edit</button>
+                    <button class="delete-text" onclick="openDeleteModal('${d.id}')">🗑️ Delete</button>
+                </div>
+            </div>
+            
+            <div class="device-info">
+                <div class="device-title">
+                    ${icon ? `<div class="device-icon">${icon}</div>` : ''}               
+                    <strong>${d.name}</strong> 
+                </div>
+                <span class="room-label">📍 ${d.room || 'Unassigned'}</span>
+            </div>
+            
+            <div class="device-actions">
+                <button class="toggle-btn ${d.status === 'on' ? 'btn-on' : 'btn-off'}" onclick="toggleDevice('${d.id}', '${d.status}')">${d.status === 'on' ? 'ON' : 'OFF'}</button>            
+            </div>
+        </div>`;
+    }).join('');
+};
+
+// --- 2. Device Actions (API Calls) ---
+const addDevice = async () => {
+    const name = $('device-name').value, room = $('device-room').value;
+    if (!name || !room) return showToast("Please enter both fields", "error");
+
+    const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, room })
+    });
+
+    if (res.ok) {
+        $('device-name').value = '';
+        $('device-room').value = '';
+        toggleModal('addModal', false);
+        loadDevices();
+        showToast("Device added successfully!", "success");
+    }
+};
+
+const toggleDevice = async (id, status) => {
+    const res = await fetch(`${API_URL}${id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-    }).then(response => {
-        if (response.ok) loadDevices();
+        body: JSON.stringify({ status: status === 'on' ? 'off' : 'on' })
     });
-}
+    if (res.ok) loadDevices();
+};
 
-// --- Modal Logic ---
+const confirmDelete = async () => {
+    const res = await fetch(API_URL + $('deleteIdField').value, { method: 'DELETE' });
+    if (res.ok) {
+        toggleModal('deleteModal', false);
+        loadDevices();
+        showToast("Device deleted successfully!", "info");
+    } else {
+        showToast("Error deleting device", "error");
+    }
+};
 
-// Delete Modal
-function openDeleteModal(id) {
-    document.getElementById('deleteModal').style.display = 'block';
-    document.getElementById('deleteIdField').value = id;
-}
+// --- 3. UI, Menus & Modals ---
+const toggleDeviceMenu = id => {
+    $$('.device-card-dropdown.show').forEach(m => m.id !== id && m.classList.remove('show'));
+    $(id).classList.toggle('show');
+};
 
-function closeModal() {
-    document.getElementById('deleteModal').style.display = 'none';
-}
+// Close menus when clicking outside
+document.addEventListener('click', e => {
+    if (!e.target.matches('.device-card-menu-btn')) {
+        $$('.device-card-dropdown.show').forEach(m => m.classList.remove('show'));
+    }
+});
 
-function confirmDelete() {
-    const id = document.getElementById('deleteIdField').value;
-    fetch(API_URL + id, { method: 'DELETE' })
-        .then(response => {
-            if (response.ok) {
-                closeModal();
-                loadDevices();
-            } else {
-                alert("Error deleting device");
-            }
-        });
-}
+const editDevice = () => showToast("Edit feature coming soon!", "info");
 
-// Add Device Modal
-function openAddModal() {
-    document.getElementById('addModal').style.display = 'block';
-}
+// Reusable Modal Logic
+const toggleModal = (id, show, fieldId = null) => {
+    $(id).style.display = show ? 'block' : 'none';
+    if (fieldId) $('deleteIdField').value = fieldId;
+};
 
-function closeAddModal() {
-    document.getElementById('addModal').style.display = 'none';
-}
+// Specific Modal Triggers
+const openDeleteModal = id => toggleModal('deleteModal', true, id);
+const closeModal = () => toggleModal('deleteModal', false);
+const openAddModal = () => toggleModal('addModal', true);
+const closeAddModal = () => toggleModal('addModal', false);
 
-function showToast(message, isError = false) {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
+// Toast Notifications
+const showToast = (msg, type = 'success') => {
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.textContent = msg;
+    $('toast-container').appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+};
 
-    // Assigns the 'error' class (Burnt Rust) or 'success' class (Moss Green)
-    toast.className = `toast ${isError ? 'error' : 'success'}`;
-    toast.textContent = message;
-
-    container.appendChild(toast);
-
-    // Physically removes the toast from the HTML after 3 seconds so they don't pile up invisibly
-    setTimeout(() => {
-        toast.remove();
-    }, 3000);
-}
+// Initialize app
 window.onload = loadDevices;
