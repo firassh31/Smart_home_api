@@ -1,25 +1,42 @@
+from flask import Flask, render_template
+from routes.device_routes import device_bp
+from helper import DeviceManager
 from patterns import Observer
-from database import SmartHomeDB
+
+# Define External Services (Observers) 
+class MobileAppService(Observer):
+    """
+    Simulates a separate mobile microservice. 
+    It listens for updates and sends 'push notifications'.
+    """
+    def update(self, device_id: str, new_status: str):
+        print(f"[Mobile Push]: Device {device_id} was turned {new_status.upper()}!")
 
 
-# Client code
+# Initialize the Web Server 
+app = Flask(__name__)
 
-class MobileApp(Observer):
-    def update(self, device_id, new_status):
-        print(f"Mobile App: Device {device_id} is now {new_status}")
-if __name__ == "__main__":
-    print("\n--- Final System Test ---")
-    db = SmartHomeDB()
+# Register the API Blueprint for all /devices routes
+app.register_blueprint(device_bp, url_prefix='/devices')
+
+# Frontend Route
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+
+#  Application Bootstrap
+if __name__ == '__main__':
+    print("\n🚀 Booting up Smart Home API Server...")
     
-    # 1. Add some devices (if they aren't already there from previous runs)
-    # Note: Since it's a real DB, you might have duplicates if you keep adding.
-    # For this test, let's just update what we know exists.
+    # Initialize the Singleton Manager
+    manager = DeviceManager()
     
-    # 2. Create the App (Observer) and register it
-    app = MobileApp()
-    db.add_observer(app)
+    # Create observers and attach them to the manager
+    mobile_service = MobileAppService()
+    manager.add_observer(mobile_service)
+    print("✅ Observers attached and listening.")
     
-    # 3. Trigger an update!
-    # Let's turn the "Kitchen Light" (assuming ID 1) to "ON"
-    print("Updating device status...")
-    db.update_device_status(1, "ON")
+    # Start the server
+    print("🌐 Server running on http://127.0.0.1:5000")
+    app.run(host='0.0.0.0', port=5000, debug=True)
