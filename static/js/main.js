@@ -1,4 +1,4 @@
-const API_URL = 'http://127.0.0.1:5000/devices/';
+const API_URL = '/devices/';
 let activeRoom = 'All', devices = [];
 
 // DOM Helpers (Saves time typing)
