@@ -62,7 +62,7 @@ MONGO_URI="mongodb+srv://<username>:<password>@<your-cluster-address>/?retryWrit
 Run the Flask application:
 
 ``` Bash
-python app.py
+python main.py
 The server will start running on http://127.0.0.1:5000. You can now open your frontend index.html file in a browser to interact with the API!
 ```
 
