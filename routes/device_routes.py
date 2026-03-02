@@ -43,3 +43,24 @@ def update_status(device_id):
     if updated_device:
         return jsonify(updated_device)
     return jsonify({"error": "Device not found"}), 404
+
+from flask import request, jsonify # Ensure 'request' is imported at the top
+
+# ... your other routes ...
+
+@device_bp.route('/<device_id>', methods=['PUT'])
+def update_device_details(device_id):
+    data = request.get_json()
+    name = data.get('name')
+    room = data.get('room')
+
+    if not name or not room:
+        return jsonify({"error": "Missing name or room"}), 400
+
+    # Call our Manager to handle the update
+    success = manager.update_device_details(device_id, name, room)
+    
+    if success:
+        return jsonify({"message": "Device updated successfully"}), 200
+    else:
+        return jsonify({"error": "Device not found or update failed"}), 404

@@ -100,3 +100,19 @@ class SmartHomeDB:
             del updated_device['_id']
             return updated_device
         return None # If the device wasn't found or there was an error, we return None to indicate failure.
+    
+    def update_device_details(self, device_id, name, room):
+        try:
+            oid = ObjectId(device_id)
+        except:
+            return False
+
+        try:
+            result = db.devices.update_one(
+                {"_id": oid},
+                {"$set": {"name": name, "room": room}}
+            )
+            return result.modified_count > 0 or result.matched_count > 0
+        except Exception as e:
+            print(f"Error updating device details: {e}")
+            return False

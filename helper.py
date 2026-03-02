@@ -53,3 +53,6 @@ class DeviceManager:
             self.notify_observers(device_id, new_status)
             
         return updated_device
+    def update_device_details(self, device_id, name, room):
+        # Passes the new details directly to the database
+        return self.db.update_device_details(device_id, name, room)

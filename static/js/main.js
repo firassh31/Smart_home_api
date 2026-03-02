@@ -77,22 +77,33 @@ const renderUI = () => {
 };
 
 // --- 2. Device Actions (API Calls) ---
-const addDevice = async () => {
-    const name = $('device-name').value, room = $('device-room').value;
+const saveDevice = async () => {
+    const id = $('editing-device-id').value;
+    const name = $('device-name').value;
+    const room = $('device-room').value;
+
     if (!name || !room) return showToast("Please enter both fields", "error");
 
-    const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, room })
-    });
+    // If we have an ID, we are updating (PUT). Otherwise, adding (POST).
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? `${API_URL}${id}` : API_URL;
 
-    if (res.ok) {
-        $('device-name').value = '';
-        $('device-room').value = '';
-        toggleModal('addModal', false);
-        loadDevices();
-        showToast("Device added successfully!", "success");
+    try {
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, room })
+        });
+
+        if (res.ok) {
+            toggleModal('addModal', false);
+            loadDevices();
+            showToast(`Device ${id ? 'updated' : 'added'} successfully!`, "success");
+        } else {
+            showToast("Error saving device", "error");
+        }
+    } catch (e) {
+        showToast("Network error", "error");
     }
 };
 
@@ -129,8 +140,20 @@ document.addEventListener('click', e => {
     }
 });
 
-const editDevice = () => showToast("Edit feature coming soon!", "info");
+const editDevice = (id) => {
+    // Find the device data from our local array
+    const device = devices.find(d => d.id === id);
+    if (!device) return;
 
+    // Pre-fill the modal
+    $('modal-title').textContent = 'Edit Device';
+    $('editing-device-id').value = device.id;
+    $('device-name').value = device.name;
+    $('device-room').value = device.room;
+    // Open modal and close the 3-dot menu
+    toggleModal('addModal', true);
+    $$('.device-card-dropdown.show').forEach(m => m.classList.remove('show'));
+};
 // Reusable Modal Logic
 const toggleModal = (id, show, fieldId = null) => {
     $(id).style.display = show ? 'block' : 'none';
@@ -140,7 +163,13 @@ const toggleModal = (id, show, fieldId = null) => {
 // Specific Modal Triggers
 const openDeleteModal = id => toggleModal('deleteModal', true, id);
 const closeModal = () => toggleModal('deleteModal', false);
-const openAddModal = () => toggleModal('addModal', true);
+const openAddModal = () => {
+    $('modal-title').textContent = 'Add New Device'; // Reset title
+    $('editing-device-id').value = '';               // Clear ID
+    $('device-name').value = '';                     // Clear Name
+    $('device-room').value = '';                     // Clear Room
+    toggleModal('addModal', true);                   // Open Modal
+};
 const closeAddModal = () => toggleModal('addModal', false);
 
 // Toast Notifications
