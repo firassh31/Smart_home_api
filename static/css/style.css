@@ -119,6 +119,106 @@ strong {
     font: bold 0.8rem var(--font-base);
 }
 
+/* SIDEBAR & OVERLAY STYLES */
+
+/* The Dark Overlay */
+#sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6) !important;
+    /* 0.6 means 60% dark, 40% transparent! */
+    z-index: 999;
+    /* Places it just under the sidebar */
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+}
+
+#sidebar-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+    /* Allows you to click it to close the menu */
+}
+
+/* The Sidebar Menu */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100%;
+    background-color: var(--accent-secondary);
+    /* Uses your existing dark/light theme! */
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    /* Places it on top of everything */
+    transform: translateX(-100%);
+    /* This is what hides it off-screen! */
+    transition: transform 0.3s ease;
+    /* The smooth slide animation */
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.sidebar.show {
+    transform: translateX(0);
+    /* This brings it back onto the screen */
+}
+
+/* Sidebar Internal Styling */
+.sidebar-header {
+    display: block;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-top: 5px;
+}
+
+.icon-btn {
+    position: absolute;
+    /* This is the magic fix! It rips the button out of the normal layout */
+    top: 25px;
+    /* Adjust this slightly if it needs to go up or down */
+    left: 20px;
+    /* This locks it to the left side */
+    width: auto;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-color);
+    padding: 0;
+    margin: 0;
+    line-height: 1;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.sidebar-nav button {
+    padding: 12px;
+    text-decoration: none;
+    color: var(--text-primary);
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.sidebar-nav a:hover,
+.sidebar-nav button:hover {
+    background-color: var(--text-secondary);
+}
+
 /* --- 6. NAVIGATION PILLS --- */
 .room-nav-container {
     display: flex;
@@ -352,9 +452,10 @@ strong {
 
 .modal-content {
     background: var(--bg-main);
+    border-radius: 20px;
     padding: var(--sp-xl);
     width: 90%;
-    max-width: 350px;
+    max-width: 400px;
     text-align: center;
     border-radius: var(--br-lg);
     box-shadow: var(--shadow-float);
@@ -364,7 +465,22 @@ strong {
     transform: translate(-50%, -50%);
 }
 
-.modal-content input {
+.input-group {
+    text-align: left;
+    margin-bottom: var(--sp-md);
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    /* Uses your existing variable! */
+}
+
+.modal-content input,
+.modal-content select {
     width: 100%;
     margin-bottom: var(--sp-md);
     padding: var(--sp-md);
@@ -374,22 +490,38 @@ strong {
     outline: none;
     background: #FAFAFA;
     transition: all var(--transition-fast);
+    box-sizing: border-box;
 }
 
-.modal-content input:focus {
+.modal-content input:focus,
+.modal-content select:focus {
     border-color: var(--accent-on);
     background: var(--bg-main);
+    box-shadow: 0 0 0 3px rgba(var(--accent-on), 0.2);
 }
 
 .modal-actions {
     display: flex;
     gap: var(--sp-md);
-    justify-content: center;
     margin-top: var(--sp-md);
+}
+
+/* Styling for modal descriptions */
+.modal-subtitle {
+    margin: 20px 0;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+}
+
+/* Modifier class for destructive actions */
+.danger-btn {
+    background: var(--alert-off);
+    color: #FFFFFF;
 }
 
 .primary-btn,
 .secondary-btn {
+    flex: 1;
     border-radius: var(--br-sm);
     padding: var(--sp-sm) var(--sp-lg);
     font-family: var(--font-heading);
@@ -398,7 +530,6 @@ strong {
 }
 
 .primary-btn {
-    background: var(--accent-on);
     color: var(--bg-main);
     border: none;
 }
@@ -407,6 +538,11 @@ strong {
     background: transparent;
     color: var(--text-secondary);
     border: 1px solid #ccc;
+}
+
+.primary-btn:active,
+.secondary-btn:active {
+    transform: scale(0.96);
 }
 
 /* --- 11. TOASTS & EMPTY STATE --- */

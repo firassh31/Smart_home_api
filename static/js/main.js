@@ -6,14 +6,14 @@ const $ = id => document.getElementById(id);
 const $$ = selector => document.querySelectorAll(selector);
 
 // Auto-Icon Matcher using clean Regex
-const getDeviceIcon = name => {
-    const n = name.toLowerCase();
-    if (n.match(/tv|screen|television/)) return '📺';
-    if (n.match(/lamp|light|bulb/)) return '💡';
-    if (n.match(/ac|air|condition/)) return '❄️';
-    if (n.match(/music|speaker|audio/)) return '🎵';
-    if (n.match(/fan/)) return '🎐';
-    return '';
+const getDeviceIcon = type => {
+    switch (type) {
+        case 'light': return '💡';
+        case 'ac': return '❄️';
+        case 'doorlock': return '🔒';
+        case 'doorlock': return '🔒';
+        default: return '🔌'; // Fallback icon for unknown types
+    }
 };
 
 // --- 1. Fetch & Render ---
@@ -50,7 +50,7 @@ const renderUI = () => {
 
     // Render Device Grid
     $('deviceList').innerHTML = filtered.map(d => {
-        const icon = getDeviceIcon(d.name);
+        const icon = getDeviceIcon(d.type);
         return `
         <div class="device-card">
             <div class="device-card-menu">
@@ -81,6 +81,7 @@ const saveDevice = async () => {
     const id = $('editing-device-id').value;
     const name = $('device-name').value;
     const room = $('device-room').value;
+    const type = $('device-type').value;
 
     if (!name || !room) return showToast("Please enter both fields", "error");
 
@@ -92,7 +93,7 @@ const saveDevice = async () => {
         const res = await fetch(url, {
             method: method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, room })
+            body: JSON.stringify({ name, room, type })
         });
 
         if (res.ok) {
@@ -115,15 +116,25 @@ const toggleDevice = async (id, status) => {
     });
     if (res.ok) loadDevices();
 };
-
 const confirmDelete = async () => {
-    const res = await fetch(API_URL + $('deleteIdField').value, { method: 'DELETE' });
-    if (res.ok) {
-        toggleModal('deleteModal', false);
-        loadDevices();
-        showToast("Device deleted successfully!", "info");
-    } else {
-        showToast("Error deleting device", "error");
+    const deleteBtn = document.querySelector('#deleteModal .danger-btn'); // Disable button to prevent multiple clicks
+    if (deleteBtn.disabled) return;
+    deleteBtn.disabled = true;
+    deleteBtn.innerText = "Deleting...";
+    try {
+        const res = await fetch(API_URL + $('deleteIdField').value, { method: 'DELETE' });
+        if (res.ok) {
+            toggleModal('deleteModal', false);
+            loadDevices();
+            showToast("Device deleted successfully!", "info");
+        } else {
+            showToast("Error deleting device", "error");
+        }
+    } catch (error) {
+        console.error("Network error:", error);
+    } finally {
+        deleteBtn.disabled = false;
+        deleteBtn.innerText = "Delete";
     }
 };
 
@@ -140,6 +151,12 @@ document.addEventListener('click', e => {
     }
 });
 
+// Toggle the Sidebar Menu and the Dark Overlay
+const toggleSidebar = () => {
+    $('sidebar').classList.toggle('show');
+    $('sidebar-overlay').classList.toggle('show');
+};
+
 const editDevice = (id) => {
     // Find the device data from our local array
     const device = devices.find(d => d.id === id);
@@ -150,6 +167,7 @@ const editDevice = (id) => {
     $('editing-device-id').value = device.id;
     $('device-name').value = device.name;
     $('device-room').value = device.room;
+    $('device-type').value = device.type;
     // Open modal and close the 3-dot menu
     toggleModal('addModal', true);
     $$('.device-card-dropdown.show').forEach(m => m.classList.remove('show'));
@@ -168,6 +186,7 @@ const openAddModal = () => {
     $('editing-device-id').value = '';               // Clear ID
     $('device-name').value = '';                     // Clear Name
     $('device-room').value = '';                     // Clear Room
+    $('device-type').value = '';                     // Clear Type
     toggleModal('addModal', true);                   // Open Modal
 };
 const closeAddModal = () => toggleModal('addModal', false);
