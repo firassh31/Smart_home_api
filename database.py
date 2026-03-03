@@ -45,13 +45,17 @@ class SmartHomeDB:
             print(f"Database error while fetching devices: {e}")
             return [] # If there's an error (like a network issue), we return an empty list to avoid crashing the app. The frontend can handle this case by showing a message like "No devices found".
         
-    def add_device(self, name, room):
+    def add_device(self, name, room, device_type):
         try:
             device = {
                 "name": name,
                 "room": room,
-                "status": "off" 
+                "status": "off", 
+                "type": device_type
             }
+            if device_type == "light":
+                device["brightness"] = 0 # Lights start off by default, but we could easily add more logic here for different device types in the future.
+                device["schedule"] = None   # Default to no schedule
             result = db.devices.insert_one(device) #Inserts the new device document into the "devices" collection in MongoDB.
             device["id"] = str(result.inserted_id)
             del device['_id']
@@ -101,7 +105,7 @@ class SmartHomeDB:
             return updated_device
         return None # If the device wasn't found or there was an error, we return None to indicate failure.
     
-    def update_device_details(self, device_id, name, room):
+    def update_device_details(self, device_id, name, room, device_type):
         try:
             oid = ObjectId(device_id)
         except:
@@ -110,7 +114,7 @@ class SmartHomeDB:
         try:
             result = db.devices.update_one(
                 {"_id": oid},
-                {"$set": {"name": name, "room": room}}
+                {"$set": {"name": name, "room": room, "type": device_type}}
             )
             return result.modified_count > 0 or result.matched_count > 0
         except Exception as e:

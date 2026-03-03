@@ -12,12 +12,13 @@ def get_devices():
 def add_device():
     data = request.get_json()
     name = data.get('name')
-    room = data.get('room', 'Living Room')
+    room = data.get('room')
+    device_type = data.get('type')
 
     if not name:
         return jsonify({"error": "Name is required"}), 400
     
-    new_device = manager.add_device(name, room)
+    new_device = manager.add_device(name, room, device_type)
     return jsonify(new_device), 201
 
 @device_bp.route('/<device_id>', methods=['DELETE'])
@@ -53,12 +54,13 @@ def update_device_details(device_id):
     data = request.get_json()
     name = data.get('name')
     room = data.get('room')
+    device_type = data.get('type')
 
     if not name or not room:
         return jsonify({"error": "Missing name or room"}), 400
 
     # Call our Manager to handle the update
-    success = manager.update_device_details(device_id, name, room)
+    success = manager.update_device_details(device_id, name, room, device_type)
     
     if success:
         return jsonify({"message": "Device updated successfully"}), 200

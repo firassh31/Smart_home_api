@@ -38,8 +38,8 @@ class DeviceManager:
     def get_all_devices(self):
         return self.db.get_all_devices()
 
-    def add_device(self, name, room):
-        return self.db.add_device(name, room)
+    def add_device(self, name, room, device_type):
+        return self.db.add_device(name, room,device_type)
 
     def delete_device(self, device_id):
         return self.db.delete_device(device_id)
@@ -53,6 +53,6 @@ class DeviceManager:
             self.notify_observers(device_id, new_status)
             
         return updated_device
-    def update_device_details(self, device_id, name, room):
+    def update_device_details(self, device_id, name, room, device_type):
         # Passes the new details directly to the database
-        return self.db.update_device_details(device_id, name, room)
+        return self.db.update_device_details(device_id, name, room, device_type)
