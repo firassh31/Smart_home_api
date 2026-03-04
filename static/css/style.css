@@ -700,6 +700,11 @@ strong {
     border-radius: var(--br-md);
 }
 
+.header-spacer {
+    width: 60px;
+    /* Added to keep HTML clean */
+}
+
 @keyframes slideDown {
     from {
         opacity: 0;
