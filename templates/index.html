@@ -94,8 +94,51 @@
             </div>
         </div>
     </div>
-    <div id="toast-container"></div>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <div class="panel-content" id="control-device-content">
+        <div id="deviceControlPanel" class="slide-up-panel">
+
+            <div class="panel-header">
+                <button class="back-btn" onclick="closeDeviceControl()">← Back</button>
+                <h2 id="control-device-name">Device Name</h2>
+                <div style="width: 60px;"></div>
+            </div>
+
+            <div class="panel-content" id="control-device-content">
+                <div id="panel-light" class="device-panel hidden">
+                    <div class="settings-group">
+                        <h3>Brightness</h3>
+                        <input type="range" min="1" max="100" value="100" class="full-width-slider"
+                            id="brightness-slider">
+                        <p class="slider-value-text">Level: <span id="brightness-display">100</span>%</p>
+                    </div>
+                </div>
+
+                <div id="panel-ac" class="device-panel hidden">
+                    <div class="settings-group">
+                        <h3>Temperature</h3>
+                        <div class="temp-control-wrapper">
+                            <button class="secondary-btn temp-btn">-</button>
+                            <h2 class="temp-display">22°C</h2>
+                            <button class="secondary-btn temp-btn">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="panel-doorlock" class="device-panel hidden">
+                    <div class="settings-group">
+                        <h3>Security</h3>
+                        <button class="primary-btn danger-btn full-width-btn">Unlock Door</button>
+                    </div>
+                </div>
+
+                <div id="panel-unknown" class="device-panel hidden">
+                    <p>No advanced settings available for this device type.</p>
+                </div>
+            </div>
+
+        </div>
+        <div id="toast-container"></div>
+        <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 
 </html>

@@ -1,4 +1,4 @@
-/* --- 1. FONTS & TYPOGRAPHY --- */
+/*  FONTS & TYPOGRAPHY */
 @font-face {
     font-family: 'Inter';
     src: url('../fonts/Inter_18pt-Regular.ttf') format('truetype');
@@ -13,7 +13,7 @@
     font-style: normal;
 }
 
-/* --- 2. DESIGN TOKENS --- */
+/*  DESIGN TOKENS */
 :root {
     --bg-main: #FFFFFF;
     --text-primary: #121212;
@@ -41,7 +41,7 @@
     --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* --- 3. UNIVERSAL RESET --- */
+/* UNIVERSAL RESET */
 *,
 *::before,
 *::after {
@@ -80,7 +80,7 @@ strong {
     margin-bottom: var(--sp-sm);
 }
 
-/* --- 4. SHARED ALIGNMENTS --- */
+/* SHARED ALIGNMENTS */
 .header-content,
 .device-title,
 .device-actions,
@@ -219,7 +219,7 @@ strong {
     background-color: var(--text-secondary);
 }
 
-/* --- 6. NAVIGATION PILLS --- */
+/*  NAVIGATION PILLS  */
 .room-nav-container {
     display: flex;
     gap: 12px;
@@ -253,7 +253,7 @@ strong {
     box-shadow: 0 4px 12px rgba(107, 176, 191, 0.35);
 }
 
-/* --- 7. DEVICE GRID & CARDS --- */
+/*  DEVICE GRID & CARDS */
 .content-wrapper {
     padding: 20px;
     margin: 0;
@@ -276,6 +276,7 @@ strong {
     box-shadow: var(--shadow-md);
     transition: transform var(--transition-fast);
     position: relative;
+    cursor: pointer;
 }
 
 .device-card:hover {
@@ -311,11 +312,13 @@ strong {
 }
 
 .device-actions {
-    justify-content: space-between;
+    display: flex;
+    justify-content: flex-end;
     width: 100%;
+    margin-top: auto;
 }
 
-/* --- 8. CARD MENU (THREE DOTS) --- */
+/*  CARD MENU (THREE DOTS) */
 .device-card-menu {
     position: absolute;
     top: 15px;
@@ -377,7 +380,7 @@ strong {
     border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-/* --- 9. BUTTONS & TOGGLES --- */
+/*  BUTTONS & TOGGLES */
 .toggle-btn {
     position: relative;
     width: 56px;
@@ -440,7 +443,7 @@ strong {
     transform: scale(1.05) translateY(-2px);
 }
 
-/* --- 10. MODALS --- */
+/*  MODALS */
 .modal {
     display: none;
     position: fixed;
@@ -545,7 +548,7 @@ strong {
     transform: scale(0.96);
 }
 
-/* --- 11. TOASTS & EMPTY STATE --- */
+/*  TOASTS & EMPTY STATE */
 .empty-state {
     flex-direction: column;
     padding: 60px 20px;
@@ -590,6 +593,111 @@ strong {
 
 .toast.info {
     background: var(--text-secondary);
+}
+
+/* FULL SCREEN SLIDE-UP PANEL */
+.slide-up-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #f8f9fa;
+    /* A nice clean background color */
+    z-index: 2000;
+    /* Ensures it sits on top of absolutely everything else */
+
+    /* This pushes it off the bottom of the screen */
+    transform: translateY(100%);
+
+    /* This makes the animation buttery smooth like a native mobile app */
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    display: flex;
+    flex-direction: column;
+}
+
+/* JavaScript will add this class to slide it up */
+.slide-up-panel.active {
+    transform: translateY(0);
+}
+
+/* Panel Header */
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: #ffffff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.panel-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #333;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: var(--primary-color, #007bff);
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 10px 0;
+}
+
+.panel-content {
+    padding: 20px;
+    flex-grow: 1;
+    overflow-y: auto;
+    /* Allows scrolling if we add a lot of settings */
+}
+
+/* --- DEVICE CONTROL PANEL CONTENT --- */
+.hidden {
+    display: none !important;
+}
+
+.slider-value-text {
+    text-align: center;
+    color: var(--text-secondary);
+    margin-top: 10px;
+}
+
+.full-width-slider {
+    width: 100%;
+    margin: 20px 0;
+}
+
+.temp-control-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+}
+
+.temp-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.temp-display {
+    margin: 0;
+    font-size: 2.5rem;
+}
+
+.full-width-btn {
+    width: 100%;
+    padding: 15px;
+    font-size: 1.1rem;
+    border-radius: var(--br-md);
 }
 
 @keyframes slideDown {

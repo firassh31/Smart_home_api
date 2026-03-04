@@ -11,12 +11,11 @@ const getDeviceIcon = type => {
         case 'light': return '💡';
         case 'ac': return '❄️';
         case 'doorlock': return '🔒';
-        case 'doorlock': return '🔒';
         default: return '🔌'; // Fallback icon for unknown types
     }
 };
 
-// --- 1. Fetch & Render ---
+// Fetch & Render 
 const loadDevices = async () => {
     try {
         const res = await fetch(API_URL);
@@ -52,12 +51,12 @@ const renderUI = () => {
     $('deviceList').innerHTML = filtered.map(d => {
         const icon = getDeviceIcon(d.type);
         return `
-        <div class="device-card">
-            <div class="device-card-menu">
+        <div class="device-card" onclick="openDeviceControl(event, '${d.id}','${d.name}', '${d.type}')">           
+        <div class="device-card-menu">
                 <button class="device-card-menu-btn" onclick="toggleDeviceMenu('device-menu-${d.id}')">⋮</button>
                 <div id="device-menu-${d.id}" class="device-card-dropdown">
-                    <button onclick="editDevice('${d.id}')">✏️ Edit</button>
-                    <button class="delete-text" onclick="openDeleteModal('${d.id}')">🗑️ Delete</button>
+                    <button onclick=" editDevice('${d.id}')">✏️ Edit</button>
+                    <button class="delete-text" onclick="  openDeleteModal('${d.id}')">🗑️ Delete</button>
                 </div>
             </div>
             
@@ -76,7 +75,7 @@ const renderUI = () => {
     }).join('');
 };
 
-// --- 2. Device Actions (API Calls) ---
+// Device Actions (API Calls) 
 const saveDevice = async () => {
     const id = $('editing-device-id').value;
     const name = $('device-name').value;
@@ -199,6 +198,47 @@ const showToast = (msg, type = 'success') => {
     $('toast-container').appendChild(t);
     setTimeout(() => t.remove(), 3000);
 };
+const openDeviceControl = (e, deviceId, deviceName, deviceType) => {
+    // Shield against button clicks
+    if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.device-card-dropdown')) {
+        return;
+    }
+    const device = devices.find(d => d.id === deviceId);
+    if (!device) {
+        console.error("Device not found in array!");
+        return;
+    }
 
+    const titleElement = $('control-device-name');
+    if (titleElement) titleElement.innerText = device.name;
+
+    // 2. Hide all panels first
+    $$('.device-panel').forEach(panel => panel.classList.add('hidden'));
+
+    // 3. Unhide the specific panel based on type
+    const activePanel = $(`panel-${device.type}`);
+    if (activePanel) {
+        activePanel.classList.remove('hidden');
+    } else {
+        const unknownPanel = $('panel-unknown');
+        if (unknownPanel) unknownPanel.classList.remove('hidden');
+    }
+
+    // 4. Slide the panel up!
+    const mainPanel = $('deviceControlPanel');
+    if (mainPanel) {
+        mainPanel.classList.add('active');
+    } else {
+        console.error("Missing #deviceControlPanel in HTML!");
+    };
+};
+const closeDeviceControl = () => {
+    const mainPanel = $('deviceControlPanel');
+    if (mainPanel) {
+        mainPanel.classList.remove('active');
+    } else {
+        console.error("Could not find the panel to close!");
+    }
+};
 // Initialize app
 window.onload = loadDevices;
