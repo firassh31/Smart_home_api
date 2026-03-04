@@ -90,7 +90,67 @@ strong {
     align-items: center;
 }
 
-/* --- 5. HEADER --- */
+/* Reusable Button Styles for Icons, Menu Buttons, and Navigation */
+.icon-btn,
+.device-card-menu-btn,
+.sidebar-nav button,
+.device-card-dropdown button,
+.back-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.temp-control-wrapper,
+.panel-header,
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.main-header,
+.panel-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* --- GLOBAL FORM ELEMENTS --- */
+input[type="text"],
+select {
+    width: 100%;
+    margin-bottom: var(--sp-md);
+    padding: var(--sp-md);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: var(--br-sm);
+    font: 1rem var(--font-base);
+    outline: none;
+    background: var(--bg-main);
+    transition: all var(--transition-fast);
+    /* Notice we completely deleted box-sizing! Your universal * reset already handles it. */
+}
+
+input[type="text"]:focus,
+select:focus {
+    border-color: var(--accent-on);
+    background: var(--bg-main);
+    box-shadow: 0 0 0 3px rgba(var(--accent-on), 0.2);
+}
+
+.status-badge,
+.btn-on,
+.fab-btn,
+.toast.success {
+    background: var(--accent-on);
+}
+
+.btn-off,
+.danger-btn,
+.toast.error {
+    background: var(--alert-off);
+}
+
+
+/* HEADER */
 .main-header {
     position: sticky;
     top: 0;
@@ -99,11 +159,16 @@ strong {
     padding: var(--sp-md) 0;
     margin-bottom: var(--sp-xl);
     z-index: 100;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.header-content {
-    justify-content: space-between;
+.panel-header {
+    padding: 20px;
+    background-color: var(--bg-main);
+    box-shadow: var(--shadow-sm);
+}
+
+.temp-control-wrapper {
+    padding: 20px 0;
 }
 
 .main-header h1 {
@@ -112,7 +177,6 @@ strong {
 }
 
 .status-badge {
-    background: var(--accent-on);
     color: var(--bg-main);
     padding: 6px 14px;
     border-radius: var(--br-pill);
@@ -179,16 +243,10 @@ strong {
 
 .icon-btn {
     position: absolute;
-    /* This is the magic fix! It rips the button out of the normal layout */
     top: 25px;
-    /* Adjust this slightly if it needs to go up or down */
     left: 20px;
-    /* This locks it to the left side */
     width: auto;
-    background: none;
-    border: none;
     font-size: 24px;
-    cursor: pointer;
     color: var(--text-color);
     padding: 0;
     margin: 0;
@@ -205,11 +263,8 @@ strong {
     padding: 12px;
     text-decoration: none;
     color: var(--text-primary);
-    background: none;
-    border: none;
     text-align: left;
     font-size: 16px;
-    cursor: pointer;
     border-radius: 8px;
     transition: background 0.2s;
 }
@@ -326,11 +381,8 @@ strong {
 }
 
 .device-card-menu-btn {
-    background: none;
-    border: none;
     font-size: 1.5rem;
     color: var(--text-secondary);
-    cursor: pointer;
     padding: 0 5px;
     line-height: 1;
     transition: color var(--transition-fast);
@@ -360,12 +412,9 @@ strong {
 }
 
 .device-card-dropdown button {
-    background: none;
-    border: none;
     padding: 10px 15px;
     text-align: left;
     width: 100%;
-    cursor: pointer;
     font: 0.95rem var(--font-base);
     color: var(--text-primary);
     transition: background var(--transition-fast);
@@ -409,17 +458,10 @@ strong {
     transition: transform var(--transition-smooth);
 }
 
-.btn-on {
-    background: var(--accent-on);
-}
-
 .btn-on::after {
     transform: translateX(24px);
 }
 
-.btn-off {
-    background: var(--alert-off);
-}
 
 .fab-btn {
     position: fixed;
@@ -428,7 +470,6 @@ strong {
     width: 60px;
     height: 60px;
     border-radius: var(--br-circle);
-    background: var(--accent-on);
     color: var(--bg-main);
     font-size: 2rem;
     border: none;
@@ -455,7 +496,6 @@ strong {
 
 .modal-content {
     background: var(--bg-main);
-    border-radius: 20px;
     padding: var(--sp-xl);
     width: 90%;
     max-width: 400px;
@@ -466,6 +506,7 @@ strong {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    text-align: center;
 }
 
 .input-group {
@@ -479,28 +520,6 @@ strong {
     font-size: 0.9rem;
     font-weight: 600;
     color: var(--text-secondary);
-    /* Uses your existing variable! */
-}
-
-.modal-content input,
-.modal-content select {
-    width: 100%;
-    margin-bottom: var(--sp-md);
-    padding: var(--sp-md);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: var(--br-sm);
-    font: 1rem var(--font-base);
-    outline: none;
-    background: #FAFAFA;
-    transition: all var(--transition-fast);
-    box-sizing: border-box;
-}
-
-.modal-content input:focus,
-.modal-content select:focus {
-    border-color: var(--accent-on);
-    background: var(--bg-main);
-    box-shadow: 0 0 0 3px rgba(var(--accent-on), 0.2);
 }
 
 .modal-actions {
@@ -518,8 +537,7 @@ strong {
 
 /* Modifier class for destructive actions */
 .danger-btn {
-    background: var(--alert-off);
-    color: #FFFFFF;
+    color: var(--bg-main);
 }
 
 .primary-btn,
@@ -540,7 +558,7 @@ strong {
 .secondary-btn {
     background: transparent;
     color: var(--text-secondary);
-    border: 1px solid #ccc;
+    border: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 .primary-btn:active,
@@ -565,13 +583,13 @@ strong {
 #toast-container {
     position: fixed;
     top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
     z-index: 9999;
     display: flex;
     flex-direction: column;
     gap: 10px;
     pointer-events: none;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .toast {
@@ -583,13 +601,6 @@ strong {
     animation: slideDown 0.3s forwards, fadeOut 0.3s forwards 2.7s;
 }
 
-.toast.error {
-    background: var(--alert-off);
-}
-
-.toast.success {
-    background: var(--accent-on);
-}
 
 .toast.info {
     background: var(--text-secondary);
@@ -602,11 +613,9 @@ strong {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #f8f9fa;
-    /* A nice clean background color */
+    background-color: var(--bg-main);
     z-index: 2000;
     /* Ensures it sits on top of absolutely everything else */
-
     /* This pushes it off the bottom of the screen */
     transform: translateY(100%);
 
@@ -622,35 +631,23 @@ strong {
     transform: translateY(0);
 }
 
-/* Panel Header */
-.panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    background-color: #ffffff;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
-}
 
 .panel-header h2 {
     margin: 0;
     font-size: 1.2rem;
-    color: #333;
+    color: var(--text-primary);
 }
 
 .back-btn {
-    background: none;
-    border: none;
-    color: var(--primary-color, #007bff);
+    color: var(--accent-secondary);
     font-size: 1rem;
     font-weight: bold;
-    cursor: pointer;
     padding: 10px 0;
 }
 
 .panel-content {
     padding: 20px;
+    padding-bottom: 90px;
     flex-grow: 1;
     overflow-y: auto;
     /* Allows scrolling if we add a lot of settings */
@@ -672,12 +669,6 @@ strong {
     margin: 20px 0;
 }
 
-.temp-control-wrapper {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 0;
-}
 
 .temp-btn {
     width: 50px;
@@ -703,6 +694,33 @@ strong {
 .header-spacer {
     width: 60px;
     /* Added to keep HTML clean */
+}
+
+.panel-footer {
+    position: absolute;
+    padding: 20px;
+    bottom: 0;
+    left: 0;
+    background: var(--bg-main);
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    margin-top: auto;
+}
+
+.panel-footer .primary-btn {
+    flex: none;
+    /* Overrides the flex: 1 from your main button class */
+    width: auto;
+}
+
+/* Disables clicking and dims the panel when a device is OFF */
+.disabled-panel {
+    opacity: 0.4;
+    pointer-events: none;
+    filter: grayscale(100%);
+    transition: all var(--transition-fast);
 }
 
 @keyframes slideDown {

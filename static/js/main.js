@@ -198,47 +198,157 @@ const showToast = (msg, type = 'success') => {
     $('toast-container').appendChild(t);
     setTimeout(() => t.remove(), 3000);
 };
-const openDeviceControl = (e, deviceId, deviceName, deviceType) => {
-    // Shield against button clicks
-    if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.device-card-dropdown')) {
-        return;
-    }
-    const device = devices.find(d => d.id === deviceId);
-    if (!device) {
-        console.error("Device not found in array!");
-        return;
-    }
+// const openDeviceControl = (e, deviceId, _deviceName, _deviceType) => {
+//     // Shield against button clicks
+//     if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.device-card-dropdown')) {
+//         return;
+//     }
+//     const device = devices.find(d => d.id === deviceId);
+//     if (!device) {
+//         console.error("Device not found in array!");
+//         return;
+//     }
 
-    const titleElement = $('control-device-name');
-    if (titleElement) titleElement.innerText = device.name;
+//     const titleElement = $('control-device-name');
+//     if (titleElement) titleElement.innerText = device.name;
 
-    // 2. Hide all panels first
-    $$('.device-panel').forEach(panel => panel.classList.add('hidden'));
+//     // 2. Hide all panels first
+//     $$('.device-panel').forEach(panel => panel.classList.add('hidden'));
 
-    // 3. Unhide the specific panel based on type
-    const activePanel = $(`panel-${device.type}`);
-    if (activePanel) {
-        activePanel.classList.remove('hidden');
-    } else {
-        const unknownPanel = $('panel-unknown');
-        if (unknownPanel) unknownPanel.classList.remove('hidden');
-    }
+//     // 3. Unhide the specific panel based on type
+//     const activePanel = $(`panel-${device.type}`);
+//     if (activePanel) {
+//         activePanel.classList.remove('hidden');
+//     } else {
+//         const unknownPanel = $('panel-unknown');
+//         if (unknownPanel) unknownPanel.classList.remove('hidden');
+//     }
 
-    // 4. Slide the panel up!
-    const mainPanel = $('deviceControlPanel');
-    if (mainPanel) {
-        mainPanel.classList.add('active');
-    } else {
-        console.error("Missing #deviceControlPanel in HTML!");
+//     // 4. Slide the panel up!
+//     const mainPanel = $('deviceControlPanel');
+//     if (mainPanel) {
+//         mainPanel.classList.add('active');
+//     } else {
+//         console.error("Missing #deviceControlPanel in HTML!");
+//     };
+// };
+// const closeDeviceControl = () => {
+//     const mainPanel = $('deviceControlPanel');
+//     if (mainPanel) {
+//         mainPanel.classList.remove('active');
+//     } else {
+//         console.error("Could not find the panel to close!");
+//     }
+// };
+
+// --- DEVICE CONTROL PANEL ---
+let activeControlDevice = null;
+
+// 1. Reusable Debounce Utility (Pro-Level Efficiency)
+// This wraps any function and forces it to wait 'delay' milliseconds before running.
+const debounce = (func, delay) => {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => func(...args), delay);
     };
 };
-const closeDeviceControl = () => {
-    const mainPanel = $('deviceControlPanel');
-    if (mainPanel) {
-        mainPanel.classList.remove('active');
-    } else {
-        console.error("Could not find the panel to close!");
+
+// 2. The Core API Caller
+const updateDeviceState = async (stateUpdates) => {
+    if (!activeControlDevice) return;
+    try {
+        const res = await fetch(`${API_URL}${activeControlDevice.id}/state`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(stateUpdates)
+        });
+        if (res.ok) {
+            const updatedDevice = await res.json();
+            const index = devices.findIndex(d => d.id === updatedDevice.id);
+            if (index !== -1) devices[index] = updatedDevice;
+            showToast("Settings saved!", "success");
+        }
+    } catch {
+        showToast("Network error", "error");
     }
 };
+
+// 3. The 5-Second Delayed Version!
+// We simply wrap our API caller in the debounce utility.
+const debouncedUpdateState = debounce(updateDeviceState, 5000);
+
+// 4. Open/Close Logic
+const openDeviceControl = (e, deviceId) => {
+    // Combine the guard clauses into one clean line
+    if (e.target.closest('button, input, .device-card-dropdown')) return;
+
+    const device = devices.find(d => d.id === deviceId);
+    if (!device) return;
+
+    activeControlDevice = device;
+    $('control-device-name').innerText = device.name;
+
+    // Pre-fill UI safely
+    if (device.type === 'light') {
+        $('brightness-slider').value = device.brightness || 100;
+        $('brightness-display').innerText = device.brightness || 100;
+    } else if (device.type === 'ac') {
+        document.querySelector('.temp-display').innerText = (device.temperature || 22) + '°C';
+    }
+
+    // Hide all, unhide the active one
+    $$('.device-panel').forEach(p => p.classList.add('hidden'));
+    const activePanel = $(`panel-${device.type}`) || $('panel-unknown');
+    activePanel.classList.remove('hidden');
+
+    $('deviceControlPanel').classList.add('active');
+};
+
+const closeDeviceControl = () => {
+    $('deviceControlPanel').classList.remove('active');
+    activeControlDevice = null;
+};
+
+// 5. Setup Event Listeners
+const setupControlListeners = () => {
+    // Light Slider
+    const slider = $('brightness-slider');
+    if (slider) {
+        slider.addEventListener('input', e => {
+            $('brightness-display').innerText = e.target.value;
+            // Call the 5-second delayed version
+            debouncedUpdateState({ brightness: parseInt(e.target.value) });
+        });
+    }
+
+    // AC Buttons (Optimized to a single loop)
+    $$('.temp-btn').forEach((btn, index) => {
+        btn.addEventListener('click', () => {
+            if (!activeControlDevice) return;
+            const display = document.querySelector('.temp-display');
+
+            // index 0 is the minus button (-1), index 1 is the plus button (+1)
+            let temp = parseInt(display.innerText) + (index === 0 ? -1 : 1);
+            temp = Math.max(16, Math.min(30, temp)); // Clamps math between 16 and 30
+
+            display.innerText = temp + '°C';
+            debouncedUpdateState({ temperature: temp });
+        });
+    });
+
+    // Door Lock (Uses the instant update, NOT the delayed one)
+    const lockBtn = document.querySelector('#panel-doorlock .danger-btn');
+    if (lockBtn) {
+        lockBtn.addEventListener('click', () => {
+            updateDeviceState({ is_locked: false });
+            showToast("Unlocking Door...", "info");
+        });
+    }
+};
+
 // Initialize app
-window.onload = loadDevices;
+window.onload = () => {
+    loadDevices();
+    setupControlListeners();
+};

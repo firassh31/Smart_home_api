@@ -44,6 +44,11 @@ class DeviceManager:
     def delete_device(self, device_id):
         return self.db.delete_device(device_id)
 
+
+    def update_device_details(self, device_id, name, room, device_type):
+        # Passes the new details directly to the database
+        return self.db.update_device_details(device_id, name, room, device_type)
+    
     def update_device_status(self, device_id, new_status):
         # Update the database
         updated_device = self.db.update_device_status(device_id, new_status)
@@ -51,8 +56,14 @@ class DeviceManager:
         # If successful, trigger the Observer Pattern!
         if updated_device:
             self.notify_observers(device_id, new_status)
-            
-        return updated_device
-    def update_device_details(self, device_id, name, room, device_type):
-        # Passes the new details directly to the database
-        return self.db.update_device_details(device_id, name, room, device_type)
+            return updated_device
+        
+    def update_device_state(self, device_id, state_updates):
+        # Updates specific settings (brightness, temp, etc.) and notifies observers.
+        updated_device = self.db.update_device_state(device_id, state_updates)
+        
+        if updated_device:
+            # Format a string for the observer notification
+            changes = ", ".join([f"{k}={v}" for k, v in state_updates.items()])
+            self.notify_observers(device_id, f"updated settings: {changes}")
+            return updated_device
