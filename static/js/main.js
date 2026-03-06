@@ -1,24 +1,71 @@
+/* ═══════════════════════════════════════════════════
+   MSHome — main.js
+   Refactored for speed:
+   • Optimistic toggle (no full reload on ON/OFF)
+   • Modal open/close via CSS class (no display toggling)
+   • All event listeners registered once in setupListeners()
+   • DOM cache for frequently accessed elements
+═══════════════════════════════════════════════════ */
+
 const API_URL = '/devices/';
-let activeRoom = 'All', devices = [];
+let devices = [];
+let activeRoom = 'All';
+let activeControlDevice = null;
 
-// DOM Helpers (Saves time typing)
-const $ = id => document.getElementById(id);
-const $$ = selector => document.querySelectorAll(selector);
-
-// Auto-Icon Matcher using clean Regex
-const getDeviceIcon = type => {
-    switch (type) {
-        case 'light': return '💡';
-        case 'ac': return '❄️';
-        case 'doorlock': return '🔒';
-        default: return '🔌'; // Fallback icon for unknown types
-    }
+/* ── DOM Cache ─────────────────────────────────── */
+const el = {
+    deviceList: document.getElementById('deviceList'),
+    roomNav: document.getElementById('room-nav'),
+    activeCount: document.getElementById('active-count'),
+    activeCountDesktop: document.getElementById('active-count-desktop'),
+    statTotal: document.getElementById('stat-total'),
+    statOn: document.getElementById('stat-on'),
+    statRooms: document.getElementById('stat-rooms'),
+    sidebar: document.getElementById('sidebar'),
+    sidebarOverlay: document.getElementById('sidebar-overlay'),
+    deleteModal: document.getElementById('deleteModal'),
+    addModal: document.getElementById('addModal'),
+    deleteIdField: document.getElementById('deleteIdField'),
+    editingId: document.getElementById('editing-device-id'),
+    deviceName: document.getElementById('device-name'),
+    deviceRoom: document.getElementById('device-room'),
+    deviceType: document.getElementById('device-type'),
+    modalTitle: document.getElementById('modal-title'),
+    controlPanel: document.getElementById('deviceControlPanel'),
+    controlName: document.getElementById('control-device-name'),
+    brightnessSlider: document.getElementById('brightness-slider'),
+    brightnessDisplay: document.getElementById('brightness-display'),
+    tempDisplay: document.querySelector('.temp-display'),
+    unlockBtn: document.getElementById('unlock-btn'),
+    toastContainer: document.getElementById('toast-container'),
 };
 
-// Fetch & Render 
+/* ── Helpers ───────────────────────────────────── */
+const getIcon = type => ({ light: '💡', ac: '❄️', doorlock: '🔒' }[type] || '🔌');
+
+const debounce = (fn, ms) => {
+    let t;
+    return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+};
+
+/* ── Toast ─────────────────────────────────────── */
+const showToast = (msg, type = 'success') => {
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.textContent = msg;
+    el.toastContainer.appendChild(t);
+    setTimeout(() => t.remove(), 3100);
+};
+
+/* ── Modal helpers (CSS class, not display toggle) */
+const openModal = id => document.getElementById(id).classList.add('is-open');
+const closeModal_ = id => document.getElementById(id).classList.remove('is-open');
+
+/* ── Fetch & full render ───────────────────────── */
 const loadDevices = async () => {
     try {
         const res = await fetch(API_URL);
+        if (!res.ok) throw new Error();
         devices = await res.json();
         renderUI();
     } catch {
@@ -26,236 +73,254 @@ const loadDevices = async () => {
     }
 };
 
+/* ── Render (pure DOM update, no fetch) ─────────── */
 const renderUI = () => {
-    // Render Navigation Pills
     const rooms = ['All', ...new Set(devices.map(d => d.room || 'Unassigned'))];
-    $('room-nav').innerHTML = rooms.map(r =>
-        `<button class="room-pill ${r === activeRoom ? 'active' : ''}" onclick="activeRoom='${r}'; renderUI()">${r}</button>`
+    const filtered = activeRoom === 'All'
+        ? devices
+        : devices.filter(d => (d.room || 'Unassigned') === activeRoom);
+
+    const onCount = filtered.filter(d => d.status === 'on').length;
+    const allOn = devices.filter(d => d.status === 'on').length;
+    const numRooms = new Set(devices.map(d => d.room || 'Unassigned')).size;
+
+    /* Badges */
+    if (el.activeCount) el.activeCount.textContent = onCount;
+    if (el.activeCountDesktop) el.activeCountDesktop.textContent = onCount;
+    if (el.statTotal) el.statTotal.textContent = devices.length;
+    if (el.statOn) el.statOn.textContent = allOn;
+    if (el.statRooms) el.statRooms.textContent = numRooms;
+
+    /* Room pills */
+    el.roomNav.innerHTML = rooms.map(r =>
+        `<button class="room-pill${r === activeRoom ? ' active' : ''}"
+                 data-room="${r}">${r}</button>`
     ).join('');
 
-    // Filter Devices & Update Active Badge
-    const filtered = activeRoom === 'All' ? devices : devices.filter(d => (d.room || 'Unassigned') === activeRoom);
-    $('active-count').textContent = filtered.filter(d => d.status === 'on').length;
-
-    // Handle Empty State
+    /* Device grid */
     if (!filtered.length) {
-        $('deviceList').innerHTML = `
-            <div class="empty-state" style="grid-column: 1 / -1;">
+        el.deviceList.innerHTML = `
+            <div class="empty-state" style="grid-column:1/-1">
                 <div class="empty-icon">🏠</div>
                 <p>No devices found here.</p>
             </div>`;
         return;
     }
 
-    // Render Device Grid
-    $('deviceList').innerHTML = filtered.map(d => {
-        const icon = getDeviceIcon(d.type);
+    el.deviceList.innerHTML = filtered.map(d => {
+        const on = d.status === 'on';
         return `
-        <div class="device-card" onclick="openDeviceControl(event, '${d.id}','${d.name}', '${d.type}')">           
-        <div class="device-card-menu">
-                <button class="device-card-menu-btn" onclick="toggleDeviceMenu('device-menu-${d.id}')">⋮</button>
+        <div class="device-card" data-id="${d.id}">
+            <div class="device-card-menu">
+                <button class="device-card-menu-btn" data-menu="${d.id}">⋮</button>
                 <div id="device-menu-${d.id}" class="device-card-dropdown">
-                    <button onclick=" editDevice('${d.id}')">✏️ Edit</button>
-                    <button class="delete-text" onclick="  openDeleteModal('${d.id}')">🗑️ Delete</button>
+                    <button data-edit="${d.id}">✏️ Edit</button>
+                    <button class="delete-text" data-delete="${d.id}">🗑️ Delete</button>
                 </div>
             </div>
-            
-            <div class="device-info">
-                <div class="device-title">
-                    ${icon ? `<div class="device-icon">${icon}</div>` : ''}               
-                    <strong>${d.name}</strong> 
-                </div>
+            <div class="device-info" data-open="${d.id}">
+                <div class="device-icon">${getIcon(d.type)}</div>
+                <strong>${d.name}</strong>
                 <span class="room-label">📍 ${d.room || 'Unassigned'}</span>
             </div>
-            
             <div class="device-actions">
-                <button class="toggle-btn ${d.status === 'on' ? 'btn-on' : 'btn-off'}" onclick="toggleDevice('${d.id}', '${d.status}')">${d.status === 'on' ? 'ON' : 'OFF'}</button>            
+                <button class="toggle-btn ${on ? 'btn-on' : 'btn-off'}"
+                        data-toggle="${d.id}"
+                        data-status="${d.status}">
+                    ${on ? 'ON' : 'OFF'}
+                </button>
             </div>
         </div>`;
     }).join('');
 };
 
-// Device Actions (API Calls) 
+/* ── Optimistic toggle (instant UI, background save) */
+const toggleDevice = async (id, currentStatus) => {
+    const newStatus = currentStatus === 'on' ? 'off' : 'on';
+
+    /* Update local state immediately */
+    const dev = devices.find(d => d.id === id);
+    if (dev) dev.status = newStatus;
+
+    /* Update just the button in the DOM — no full re-render */
+    const btn = document.querySelector(`[data-toggle="${id}"]`);
+    if (btn) {
+        btn.classList.toggle('btn-on', newStatus === 'on');
+        btn.classList.toggle('btn-off', newStatus === 'off');
+        btn.textContent = newStatus === 'on' ? 'ON' : 'OFF';
+        btn.dataset.status = newStatus;
+    }
+
+    /* Update badge counts */
+    const onCount = (activeRoom === 'All' ? devices : devices.filter(d => (d.room || 'Unassigned') === activeRoom))
+        .filter(d => d.status === 'on').length;
+    if (el.activeCount) el.activeCount.textContent = onCount;
+    if (el.activeCountDesktop) el.activeCountDesktop.textContent = onCount;
+    if (el.statOn) el.statOn.textContent = devices.filter(d => d.status === 'on').length;
+
+    /* Background API call */
+    try {
+        const res = await fetch(`${API_URL}${id}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        });
+        if (!res.ok) throw new Error();
+    } catch {
+        /* Rollback on failure */
+        if (dev) dev.status = currentStatus;
+        if (btn) {
+            btn.classList.toggle('btn-on', currentStatus === 'on');
+            btn.classList.toggle('btn-off', currentStatus === 'off');
+            btn.textContent = currentStatus === 'on' ? 'ON' : 'OFF';
+            btn.dataset.status = currentStatus;
+        }
+        showToast('Could not update device', 'error');
+    }
+};
+
+/* ── Save Device (Add / Edit) ───────────────────── */
 const saveDevice = async () => {
-    const id = $('editing-device-id').value;
-    const name = $('device-name').value;
-    const room = $('device-room').value;
-    const type = $('device-type').value;
+    const id = el.editingId.value.trim();
+    const name = el.deviceName.value.trim();
+    const room = el.deviceRoom.value.trim();
+    const type = el.deviceType.value;
 
-    if (!name || !room) return showToast("Please enter both fields", "error");
+    if (!name || !room) return showToast('Please enter both fields', 'error');
 
-    // If we have an ID, we are updating (PUT). Otherwise, adding (POST).
     const method = id ? 'PUT' : 'POST';
     const url = id ? `${API_URL}${id}` : API_URL;
 
     try {
         const res = await fetch(url, {
-            method: method,
+            method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, room, type })
         });
-
-        if (res.ok) {
-            toggleModal('addModal', false);
-            loadDevices();
-            showToast(`Device ${id ? 'updated' : 'added'} successfully!`, "success");
-        } else {
-            showToast("Error saving device", "error");
-        }
-    } catch (e) {
-        showToast("Network error", "error");
+        if (!res.ok) throw new Error();
+        closeAddModal();
+        await loadDevices();
+        showToast(`Device ${id ? 'updated' : 'added'} successfully!`, 'success');
+    } catch {
+        showToast('Error saving device', 'error');
     }
 };
 
-const toggleDevice = async (id, status) => {
-    const res = await fetch(`${API_URL}${id}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: status === 'on' ? 'off' : 'on' })
-    });
-    if (res.ok) loadDevices();
-};
+/* ── Delete Device ──────────────────────────────── */
 const confirmDelete = async () => {
-    const deleteBtn = document.querySelector('#deleteModal .danger-btn'); // Disable button to prevent multiple clicks
-    if (deleteBtn.disabled) return;
-    deleteBtn.disabled = true;
-    deleteBtn.innerText = "Deleting...";
+    const btn = document.querySelector('#deleteModal .danger-btn');
+    if (btn.disabled) return;
+    btn.disabled = true;
+    btn.textContent = 'Deleting…';
+
     try {
-        const res = await fetch(API_URL + $('deleteIdField').value, { method: 'DELETE' });
-        if (res.ok) {
-            toggleModal('deleteModal', false);
-            loadDevices();
-            showToast("Device deleted successfully!", "info");
-        } else {
-            showToast("Error deleting device", "error");
-        }
-    } catch (error) {
-        console.error("Network error:", error);
+        const res = await fetch(API_URL + el.deleteIdField.value, { method: 'DELETE' });
+        if (!res.ok) throw new Error();
+        closeModal();
+        await loadDevices();
+        showToast('Device deleted!', 'info');
+    } catch {
+        showToast('Error deleting device', 'error');
     } finally {
-        deleteBtn.disabled = false;
-        deleteBtn.innerText = "Delete";
+        btn.disabled = false;
+        btn.textContent = 'Delete';
     }
 };
 
-// --- 3. UI, Menus & Modals ---
-const toggleDeviceMenu = id => {
-    $$('.device-card-dropdown.show').forEach(m => m.id !== id && m.classList.remove('show'));
-    $(id).classList.toggle('show');
+/* ── Modal open/close ───────────────────────────── */
+const openDeleteModal = id => {
+    el.deleteIdField.value = id;
+    openModal('deleteModal');
 };
 
-// Close menus when clicking outside
-document.addEventListener('click', e => {
-    if (!e.target.matches('.device-card-menu-btn')) {
-        $$('.device-card-dropdown.show').forEach(m => m.classList.remove('show'));
-    }
-});
+const closeModal = () => closeModal_('deleteModal');
 
-// Toggle the Sidebar Menu and the Dark Overlay
-const toggleSidebar = () => {
-    $('sidebar').classList.toggle('show');
-    $('sidebar-overlay').classList.toggle('show');
-};
-
-const editDevice = (id) => {
-    // Find the device data from our local array
-    const device = devices.find(d => d.id === id);
-    if (!device) return;
-
-    // Pre-fill the modal
-    $('modal-title').textContent = 'Edit Device';
-    $('editing-device-id').value = device.id;
-    $('device-name').value = device.name;
-    $('device-room').value = device.room;
-    $('device-type').value = device.type;
-    // Open modal and close the 3-dot menu
-    toggleModal('addModal', true);
-    $$('.device-card-dropdown.show').forEach(m => m.classList.remove('show'));
-};
-// Reusable Modal Logic
-const toggleModal = (id, show, fieldId = null) => {
-    $(id).style.display = show ? 'block' : 'none';
-    if (fieldId) $('deleteIdField').value = fieldId;
-};
-
-// Specific Modal Triggers
-const openDeleteModal = id => toggleModal('deleteModal', true, id);
-const closeModal = () => toggleModal('deleteModal', false);
 const openAddModal = () => {
-    $('modal-title').textContent = 'Add New Device'; // Reset title
-    $('editing-device-id').value = '';               // Clear ID
-    $('device-name').value = '';                     // Clear Name
-    $('device-room').value = '';                     // Clear Room
-    $('device-type').value = '';                     // Clear Type
-    toggleModal('addModal', true);                   // Open Modal
-};
-const closeAddModal = () => toggleModal('addModal', false);
-
-// Toast Notifications
-const showToast = (msg, type = 'success') => {
-    const t = document.createElement('div');
-    t.className = `toast ${type}`;
-    t.textContent = msg;
-    $('toast-container').appendChild(t);
-    setTimeout(() => t.remove(), 3000);
-};
-// const openDeviceControl = (e, deviceId, _deviceName, _deviceType) => {
-//     // Shield against button clicks
-//     if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.device-card-dropdown')) {
-//         return;
-//     }
-//     const device = devices.find(d => d.id === deviceId);
-//     if (!device) {
-//         console.error("Device not found in array!");
-//         return;
-//     }
-
-//     const titleElement = $('control-device-name');
-//     if (titleElement) titleElement.innerText = device.name;
-
-//     // 2. Hide all panels first
-//     $$('.device-panel').forEach(panel => panel.classList.add('hidden'));
-
-//     // 3. Unhide the specific panel based on type
-//     const activePanel = $(`panel-${device.type}`);
-//     if (activePanel) {
-//         activePanel.classList.remove('hidden');
-//     } else {
-//         const unknownPanel = $('panel-unknown');
-//         if (unknownPanel) unknownPanel.classList.remove('hidden');
-//     }
-
-//     // 4. Slide the panel up!
-//     const mainPanel = $('deviceControlPanel');
-//     if (mainPanel) {
-//         mainPanel.classList.add('active');
-//     } else {
-//         console.error("Missing #deviceControlPanel in HTML!");
-//     };
-// };
-// const closeDeviceControl = () => {
-//     const mainPanel = $('deviceControlPanel');
-//     if (mainPanel) {
-//         mainPanel.classList.remove('active');
-//     } else {
-//         console.error("Could not find the panel to close!");
-//     }
-// };
-
-// --- DEVICE CONTROL PANEL ---
-let activeControlDevice = null;
-
-// 1. Reusable Debounce Utility (Pro-Level Efficiency)
-// This wraps any function and forces it to wait 'delay' milliseconds before running.
-const debounce = (func, delay) => {
-    let timer;
-    return (...args) => {
-        clearTimeout(timer);
-        timer = setTimeout(() => func(...args), delay);
-    };
+    el.modalTitle.textContent = 'Add New Device';
+    el.editingId.value = '';
+    el.deviceName.value = '';
+    el.deviceRoom.value = '';
+    el.deviceType.value = 'light';
+    openModal('addModal');
+    /* Focus first input after transition */
+    setTimeout(() => el.deviceName.focus(), 80);
 };
 
-// 2. The Core API Caller
-const updateDeviceState = async (stateUpdates) => {
+const closeAddModal = () => closeModal_('addModal');
+
+const editDevice = id => {
+    const d = devices.find(d => d.id === id);
+    if (!d) return;
+    el.modalTitle.textContent = 'Edit Device';
+    el.editingId.value = d.id;
+    el.deviceName.value = d.name;
+    el.deviceRoom.value = d.room || '';
+    el.deviceType.value = d.type;
+    closeAllDropdowns();
+    openModal('addModal');
+    setTimeout(() => el.deviceName.focus(), 80);
+};
+
+/* ── Sidebar ────────────────────────────────────── */
+const toggleSidebar = () => {
+    el.sidebar.classList.toggle('show');
+    el.sidebarOverlay.classList.toggle('show');
+};
+
+/* ── Dropdowns ──────────────────────────────────── */
+const closeAllDropdowns = () =>
+    document.querySelectorAll('.device-card-dropdown.show')
+        .forEach(m => m.classList.remove('show'));
+
+/* ── Device Control Panel ───────────────────────── */
+const updateSliderFill = slider => {
+    const pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+    slider.style.setProperty('--value', pct + '%');
+};
+
+const openDeviceControl = id => {
+    const d = devices.find(d => d.id === id);
+    if (!d) return;
+    activeControlDevice = d;
+
+    el.controlName.textContent = d.name;
+
+    if (d.type === 'light') {
+        el.brightnessSlider.value = d.brightness || 100;
+        el.brightnessDisplay.textContent = el.brightnessSlider.value;
+        updateSliderFill(el.brightnessSlider);
+    } else if (d.type === 'ac') {
+        el.tempDisplay.textContent = (d.temperature || 22) + '°C';
+    } else if (d.type === 'doorlock') {
+        // Assume true (locked) if it's a new device without data
+        const isLocked = d.is_locked !== false;
+
+        // Update the text
+        el.unlockBtn.textContent = isLocked ? 'Unlock Door' : 'Lock Door';
+
+        if (isLocked) {
+            el.unlockBtn.classList.remove('danger-btn');
+            el.unlockBtn.classList.add('btn-on'); // Safe = Green
+        } else {
+            el.unlockBtn.classList.remove('btn-on');
+            el.unlockBtn.classList.add('danger-btn'); // Unlocked = Red/Danger
+        }
+    }
+
+    document.querySelectorAll('.device-panel').forEach(p => p.classList.add('hidden'));
+    const panel = document.getElementById(`panel-${d.type}`) || document.getElementById('panel-unknown');
+    panel.classList.remove('hidden');
+
+    el.controlPanel.classList.add('active');
+};
+
+const closeDeviceControl = () => {
+    el.controlPanel.classList.remove('active');
+    activeControlDevice = null;
+};
+
+/* ── State update (debounced for sliders/temp) ───── */
+const updateDeviceState = async stateUpdates => {
     if (!activeControlDevice) return;
     try {
         const res = await fetch(`${API_URL}${activeControlDevice.id}/state`, {
@@ -264,91 +329,152 @@ const updateDeviceState = async (stateUpdates) => {
             body: JSON.stringify(stateUpdates)
         });
         if (res.ok) {
-            const updatedDevice = await res.json();
-            const index = devices.findIndex(d => d.id === updatedDevice.id);
-            if (index !== -1) devices[index] = updatedDevice;
-            showToast("Settings saved!", "success");
+            const updated = await res.json();
+            const i = devices.findIndex(d => d.id === updated.id);
+            if (i !== -1) devices[i] = updated;
         }
     } catch {
-        showToast("Network error", "error");
+        showToast('Network error', 'error');
     }
 };
 
-// 3. The 5-Second Delayed Version!
-// We simply wrap our API caller in the debounce utility.
-const debouncedUpdateState = debounce(updateDeviceState, 5000);
+const debouncedUpdate = debounce(updateDeviceState, 4000);
 
-// 4. Open/Close Logic
-const openDeviceControl = (e, deviceId) => {
-    // Combine the guard clauses into one clean line
-    if (e.target.closest('button, input, .device-card-dropdown')) return;
+const savePanelSettings = () => {
+    const savePanelSettings = () => {
+        if (!activeControlDevice) return;
 
-    const device = devices.find(d => d.id === deviceId);
-    if (!device) return;
-
-    activeControlDevice = device;
-    $('control-device-name').innerText = device.name;
-
-    // Pre-fill UI safely
-    if (device.type === 'light') {
-        $('brightness-slider').value = device.brightness || 100;
-        $('brightness-display').innerText = device.brightness || 100;
-    } else if (device.type === 'ac') {
-        document.querySelector('.temp-display').innerText = (device.temperature || 22) + '°C';
-    }
-
-    // Hide all, unhide the active one
-    $$('.device-panel').forEach(p => p.classList.add('hidden'));
-    const activePanel = $(`panel-${device.type}`) || $('panel-unknown');
-    activePanel.classList.remove('hidden');
-
-    $('deviceControlPanel').classList.add('active');
+        if (activeControlDevice.type === 'light') {
+            updateDeviceState({ brightness: parseInt(el.brightnessSlider.value) });
+            showToast('Brightness saved!', 'success');
+        } else if (activeControlDevice.type === 'ac') {
+            updateDeviceState({ temperature: parseInt(el.tempDisplay.textContent) });
+            showToast('Temperature saved!', 'success');
+        } else if (activeControlDevice.type === 'doorlock') {
+            // Fallback just in case they click the green save button!
+            showToast('Security settings updated.', 'info');
+            closeDeviceControl();
+        }
+    };
 };
 
-const closeDeviceControl = () => {
-    $('deviceControlPanel').classList.remove('active');
-    activeControlDevice = null;
-};
+/* ═══════════════════════════════════════════════
+   SINGLE DELEGATED EVENT LISTENER SETUP
+   All clicks handled via event delegation on
+   document — no inline onclick needed (except
+   modal buttons which stay inline for simplicity).
+═══════════════════════════════════════════════ */
+const setupListeners = () => {
 
-// 5. Setup Event Listeners
-const setupControlListeners = () => {
-    // Light Slider
-    const slider = $('brightness-slider');
-    if (slider) {
-        slider.addEventListener('input', e => {
-            $('brightness-display').innerText = e.target.value;
-            // Call the 5-second delayed version
-            debouncedUpdateState({ brightness: parseInt(e.target.value) });
-        });
-    }
+    /* ── Global click delegation ── */
+    document.addEventListener('click', e => {
+        const t = e.target;
+        /* Three-dot menu toggle */
+        const menuBtn = t.closest('[data-menu]');
+        if (menuBtn) {
+            e.stopPropagation();
+            const id = menuBtn.dataset.menu;
+            const dd = document.getElementById(`device-menu-${id}`);
+            const was = dd.classList.contains('show');
+            closeAllDropdowns();
+            if (!was) dd.classList.add('show');
+            return;
+        }
 
-    // AC Buttons (Optimized to a single loop)
-    $$('.temp-btn').forEach((btn, index) => {
-        btn.addEventListener('click', () => {
-            if (!activeControlDevice) return;
-            const display = document.querySelector('.temp-display');
+        /* Edit button inside dropdown */
+        const editBtn = t.closest('[data-edit]');
+        if (editBtn) { editDevice(editBtn.dataset.edit); return; }
 
-            // index 0 is the minus button (-1), index 1 is the plus button (+1)
-            let temp = parseInt(display.innerText) + (index === 0 ? -1 : 1);
-            temp = Math.max(16, Math.min(30, temp)); // Clamps math between 16 and 30
+        /* Delete button inside dropdown */
+        const delBtn = t.closest('[data-delete]');
+        if (delBtn) { openDeleteModal(delBtn.dataset.delete); return; }
 
-            display.innerText = temp + '°C';
-            debouncedUpdateState({ temperature: temp });
-        });
+        /* Toggle button */
+        const toggleBtn = t.closest('[data-toggle]');
+        if (toggleBtn) {
+            e.stopPropagation();
+            toggleDevice(toggleBtn.dataset.toggle, toggleBtn.dataset.status);
+            return;
+        }
+
+        /* Device card open (not on a button/dropdown) */
+        const openArea = t.closest('[data-open]');
+        if (openArea && !t.closest('button') && !t.closest('.device-card-dropdown')) {
+            openDeviceControl(openArea.dataset.open);
+            return;
+        }
+
+        /* Close dropdowns on outside click */
+        if (!t.closest('.device-card-menu')) closeAllDropdowns();
     });
 
-    // Door Lock (Uses the instant update, NOT the delayed one)
-    const lockBtn = document.querySelector('#panel-doorlock .danger-btn');
-    if (lockBtn) {
-        lockBtn.addEventListener('click', () => {
-            updateDeviceState({ is_locked: false });
-            showToast("Unlocking Door...", "info");
-        });
-    }
+    /* ── Brightness slider ── */
+    el.brightnessSlider.addEventListener('input', e => {
+        el.brightnessDisplay.textContent = e.target.value;
+        updateSliderFill(e.target);
+        debouncedUpdate({ brightness: parseInt(e.target.value) });
+    });
+
+    /* ── AC temp buttons ── */
+    document.getElementById('temp-minus').addEventListener('click', () => adjustTemp(-1));
+    document.getElementById('temp-plus').addEventListener('click', () => adjustTemp(+1));
+
+    /* ── Door lock ── */
+    document.getElementById('unlock-btn').addEventListener('click', (e) => {
+        if (!activeControlDevice) return;
+        const isCurrentlyLocked = activeControlDevice.is_locked !== false;
+        const newLockedState = !isCurrentlyLocked;
+        activeControlDevice.is_locked = newLockedState;
+        const btn = e.target;
+        btn.textContent = newLockedState ? 'Unlock Door' : 'Lock Door';
+        if (newLockedState) {
+            btn.classList.remove('danger-btn');
+            btn.classList.add('btn-on'); // Turns Green
+        } else {
+            btn.classList.remove('btn-on');
+            btn.classList.add('danger-btn'); // Turns Red
+        }
+        updateDeviceState({ is_locked: newLockedState });
+        showToast(newLockedState ? 'Door Locked 🔒' : 'Door Unlocked 🔓', 'info');
+    });
+
+    /* ── Keyboard: Escape closes modals/panel ── */
+    document.addEventListener('keydown', e => {
+        if (e.key !== 'Escape') return;
+        if (el.addModal.classList.contains('is-open')) closeAddModal();
+        if (el.deleteModal.classList.contains('is-open')) closeModal();
+        if (el.controlPanel.classList.contains('active')) closeDeviceControl();
+    });
+
+    /* ── Keyboard: Enter submits add modal ── */
+    [el.deviceName, el.deviceRoom].forEach(inp =>
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') saveDevice(); })
+    );
 };
 
-// Initialize app
-window.onload = () => {
-    loadDevices();
-    setupControlListeners();
+const adjustTemp = delta => {
+    if (!activeControlDevice) return;
+    let temp = parseInt(el.tempDisplay.textContent) + delta;
+    temp = Math.max(16, Math.min(30, temp));
+    el.tempDisplay.textContent = temp + '°C';
+    debouncedUpdate({ temperature: temp });
 };
+
+/* ── Expose globals used by inline onclick attributes ── */
+window.saveDevice = saveDevice;
+window.confirmDelete = confirmDelete;
+window.openAddModal = openAddModal;
+window.closeAddModal = closeAddModal;
+window.closeModal = closeModal;
+window.toggleSidebar = toggleSidebar;
+window.closeDeviceControl = closeDeviceControl;
+window.savePanelSettings = savePanelSettings;
+window.profile = () => { };
+window.settings = () => { };
+window.logout = () => { };
+
+/* ── Init ── */
+window.addEventListener('DOMContentLoaded', () => {
+    setupListeners();
+    loadDevices();
+});

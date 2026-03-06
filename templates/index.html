@@ -4,145 +4,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smart Home Control</title>
+    <title>MSHome</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 
 <body>
 
+    <!-- ══ MOBILE SIDEBAR OVERLAY ══ -->
     <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
+    <!-- ══ MOBILE SIDEBAR ══ -->
     <aside id="sidebar" class="sidebar">
-        <div class="sidebar-header"></div>
-        <button class="icon-btn" onclick="toggleSidebar()">✕</button>
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <span class="sidebar-logo-icon">🏠</span>
+                <span class="sidebar-logo-text">MSHome</span>
+            </div>
+            <button class="sidebar-close-btn" onclick="toggleSidebar()">✕</button>
+        </div>
         <nav class="sidebar-nav">
-            <button class="nav-item" onclick="profile()">Profile</button>
-            <button class="nav-item" onclick="settings()">Settings</button>
-            <button class="nav-item" onclick="logout()">Logout</button>
-
+            <button class="nav-item" onclick="profile()"><span class="nav-icon">👤</span>Profile</button>
+            <button class="nav-item" onclick="settings()"><span class="nav-icon">⚙️</span>Settings</button>
+            <button class="nav-item nav-item--danger" onclick="logout()"><span class="nav-icon">🚪</span>Logout</button>
         </nav>
+        <div class="sidebar-footer">MSHome v1.0</div>
     </aside>
 
-    <div class="container">
-
-        <header class="main-header">
-            <div class="header-content">
-                <button class="menu-btn" onclick="toggleSidebar()">☰</button>
-
-                <h1>MSHome</h1>
-                <div class="status-badge">
-                    <span id="active-count">0</span> Active Devices
-                </div>
+    <!-- ══ DESKTOP TOP NAVBAR ══ -->
+    <header class="desktop-navbar">
+        <div class="desktop-navbar-inner">
+            <div class="navbar-brand">
+                <span class="navbar-logo-icon">🏠</span>
+                <span class="navbar-logo-text">MSHome</span>
+                <span class="navbar-divider"></span>
+                <span class="navbar-subtitle">Smart Control</span>
             </div>
-    </div>
+            <nav class="navbar-links">
+                <button class="navbar-link navbar-link--active">Dashboard</button>
+                <button class="navbar-link" onclick="profile()">Profile</button>
+                <button class="navbar-link" onclick="settings()">Settings</button>
+            </nav>
+            <div class="navbar-right">
+                <div class="status-badge">
+                    <span class="status-dot"></span>
+                    <span id="active-count-desktop">0</span>&nbsp;Active
+                </div>
+                <button class="navbar-logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
     </header>
 
-    <main class="content-wrapper">
-        <div id="room-nav" class="room-nav-container">
+    <!-- ══ APP SHELL ══ -->
+    <div class="app-shell">
+
+        <!-- Mobile Header -->
+        <header class="main-header mobile-only">
+            <div class="header-content">
+                <button class="menu-btn" onclick="toggleSidebar()" aria-label="Open menu">
+                    <span class="hamburger-icon">
+                        <span></span><span></span><span></span>
+                    </span>
+                </button>
+                <div class="header-brand">
+                    <h1>MSHome</h1>
+                    <span class="header-subtitle">Smart Control</span>
+                </div>
+                <div class="status-badge">
+                    <span class="status-dot"></span>
+                    <span id="active-count">0</span>&nbsp;Active
+                </div>
+            </div>
+        </header>
+
+        <!-- Desktop Hero Strip -->
+        <div class="desktop-hero desktop-only">
+            <div class="desktop-hero-inner">
+                <div class="hero-text">
+                    <h2 class="hero-title">Welcome back 👋</h2>
+                    <p class="hero-sub">Monitor and control all your smart devices from one place.</p>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-card">
+                        <span class="stat-value" id="stat-total">0</span>
+                        <span class="stat-label">Total Devices</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value accent" id="stat-on">0</span>
+                        <span class="stat-label">Active Now</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="stat-rooms">0</span>
+                        <span class="stat-label">Rooms</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div id="deviceList" class="device-grid">
-            <p><em>Loading devices...</em></p>
-        </div>
-    </main>
+        <!-- Main Content -->
+        <main class="content-wrapper">
+            <div class="room-nav-row">
+                <div id="room-nav" class="room-nav-container"></div>
+                <button class="desktop-add-btn desktop-only" onclick="openAddModal()">＋ Add Device</button>
+            </div>
+            <div class="section-header">
+                <h2 class="section-title">Devices</h2>
+            </div>
+            <div id="deviceList" class="device-grid">
+                <div class="loading-state" style="grid-column:1/-1">
+                    <div class="loading-spinner"></div>
+                    <p>Loading devices…</p>
+                </div>
+            </div>
+        </main>
+    </div>
 
-    <div id="deleteModal" class="modal">
+    <!-- Mobile FAB -->
+    <button class="fab-btn mobile-only" onclick="openAddModal()" aria-label="Add device">+</button>
+
+    <!-- Toast -->
+    <div id="toast-container"></div>
+
+    <!-- ══ DELETE MODAL ══ -->
+    <div id="deleteModal" class="modal" role="dialog" aria-modal="true">
+        <div class="modal-backdrop" onclick="closeModal()"></div>
         <div class="modal-content">
+            <div class="modal-icon">🗑️</div>
             <h3>Delete Device</h3>
-
-            <p class="modal-subtitle">Are you sure you want to delete this device?</p>
-
+            <p class="modal-subtitle">This action cannot be undone. Are you sure?</p>
             <input type="hidden" id="deleteIdField">
-
             <div class="modal-actions">
-                <button class="primary-btn secondary-btn" onclick="closeModal()">Cancel</button>
+                <button class="secondary-btn" onclick="closeModal()">Cancel</button>
                 <button class="primary-btn danger-btn" onclick="confirmDelete()">Delete</button>
             </div>
         </div>
     </div>
 
-    <button class="fab-btn" onclick="openAddModal()">+</button>
-
-    <div id="addModal" class="modal">
+    <!-- ══ ADD / EDIT MODAL ══ -->
+    <div id="addModal" class="modal" role="dialog" aria-modal="true">
+        <div class="modal-backdrop" onclick="closeAddModal()"></div>
         <div class="modal-content">
+            <div class="modal-icon">✨</div>
             <h3 id="modal-title">Add New Device</h3>
-
             <input type="hidden" id="editing-device-id">
-
             <div class="input-group">
                 <label for="device-type">Device Type</label>
                 <select id="device-type">
-                    <option value="light">Light</option>
-                    <option value="ac">AC</option>
-                    <option value="doorlock">Door Lock</option>
+                    <option value="light">💡 Light</option>
+                    <option value="ac">❄️ AC</option>
+                    <option value="doorlock">🔒 Door Lock</option>
                 </select>
             </div>
-
             <div class="input-group">
                 <label for="device-name">Device Name</label>
-                <input type="text" id="device-name" placeholder="Device Name (e.g. Lamp)" autocomplete="off">
+                <input type="text" id="device-name" placeholder="e.g. Living Room Lamp" autocomplete="off"
+                    autocorrect="off" spellcheck="false">
             </div>
-
             <div class="input-group">
-                <label for="device-room">Room Name</label>
-                <input type="text" id="device-room" placeholder="Room Name (e.g. Bedroom)" autocomplete="off">
+                <label for="device-room">Room</label>
+                <input type="text" id="device-room" placeholder="e.g. Bedroom" autocomplete="off" autocorrect="off"
+                    spellcheck="false">
             </div>
-
             <div class="modal-actions">
-                <button class="primary-btn secondary-btn" onclick="closeAddModal()">Cancel</button>
+                <button class="secondary-btn" onclick="closeAddModal()">Cancel</button>
                 <button class="primary-btn btn-on" onclick="saveDevice()">Save</button>
             </div>
         </div>
     </div>
-    <div class="panel-content" id="control-device-content">
-        <div id="deviceControlPanel" class="slide-up-panel">
 
+    <!-- ══ DEVICE CONTROL PANEL ══ -->
+    <div id="deviceControlPanel" class="slide-up-panel">
+        <div class="panel-inner">
             <div class="panel-header">
                 <button class="back-btn" onclick="closeDeviceControl()">← Back</button>
-                <h2 id="control-device-name">Device Name</h2>
+                <h2 id="control-device-name">Device</h2>
                 <div class="header-spacer"></div>
             </div>
+            <div class="panel-content">
 
-            <div class="panel-content" id="control-device-content">
                 <div id="panel-light" class="device-panel hidden">
                     <div class="settings-group">
-                        <h3>Brightness</h3>
+                        <div class="settings-group-header">
+                            <span class="settings-group-icon">💡</span>
+                            <h3>Brightness</h3>
+                        </div>
+                        <div class="brightness-display-ring">
+                            <span id="brightness-display">100</span><sup>%</sup>
+                        </div>
                         <input type="range" min="1" max="100" value="100" class="full-width-slider"
                             id="brightness-slider">
-                        <p class="slider-value-text">Level: <span id="brightness-display">100</span>%</p>
+                        <div class="slider-labels"><span>Dim</span><span>Bright</span></div>
                     </div>
                 </div>
 
                 <div id="panel-ac" class="device-panel hidden">
                     <div class="settings-group">
-                        <h3>Temperature</h3>
-                        <div class="temp-control-wrapper">
-                            <button class="secondary-btn temp-btn">-</button>
-                            <h2 class="temp-display">22°C</h2>
-                            <button class="secondary-btn temp-btn">+</button>
+                        <div class="settings-group-header">
+                            <span class="settings-group-icon">❄️</span>
+                            <h3>Temperature</h3>
                         </div>
+                        <div class="temp-control-wrapper">
+                            <button class="temp-btn" id="temp-minus">−</button>
+                            <h2 class="temp-display">22°C</h2>
+                            <button class="temp-btn" id="temp-plus">+</button>
+                        </div>
+                        <p class="temp-range-hint">Range: 16°C – 30°C</p>
                     </div>
                 </div>
 
                 <div id="panel-doorlock" class="device-panel hidden">
                     <div class="settings-group">
-                        <h3>Security</h3>
-                        <button class="primary-btn danger-btn full-width-btn">Unlock Door</button>
+                        <div class="settings-group-header">
+                            <span class="settings-group-icon">🔒</span>
+                            <h3>Security</h3>
+                        </div>
+                        <p class="modal-subtitle">Remotely unlock this device. Make sure you're present before
+                            unlocking.</p>
+                        <button class="primary-btn danger-btn full-width-btn" id="unlock-btn">Unlock Door</button>
                     </div>
                 </div>
 
                 <div id="panel-unknown" class="device-panel hidden">
-                    <p>No advanced settings available for this device type.</p>
+                    <div class="settings-group empty-panel-msg">
+                        <span style="font-size:2.5rem">🔌</span>
+                        <p>No advanced settings available for this device type.</p>
+                    </div>
                 </div>
-                <div class="panel-footer">
-                    <button class="primary-btn btn-on" onclick="savePanelSettings()">Save
-                        Settings</button>
-                </div>
-            </div>
 
-        </div>
-        <div id="toast-container"></div>
-        <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+            </div>
+            <div class="panel-footer">
+                <button class="primary-btn btn-on panel-save-btn" onclick="savePanelSettings()">Save Settings</button>
+            </div>
+        </div><!-- /.panel-inner -->
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 
 </html>
